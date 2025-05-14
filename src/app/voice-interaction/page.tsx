@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,16 +12,16 @@ import { generateSpeech } from '@/services/tts-service';
 import { useToast } from "@/hooks/use-toast";
 
 // For STT - Check if window is defined for SpeechRecognition
-const SpeechRecognition =
+const SpeechRecognitionAPI =
   typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
-let recognition: SpeechRecognition | null = null;
+let recognitionInstance: SpeechRecognition | null = null;
 
-if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.continuous = false;
-  recognition.lang = 'en-US';
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+if (SpeechRecognitionAPI) {
+  recognitionInstance = new SpeechRecognitionAPI();
+  recognitionInstance.continuous = false;
+  recognitionInstance.lang = 'en-US';
+  recognitionInstance.interimResults = false;
+  recognitionInstance.maxAlternatives = 1;
 }
 
 export default function VoiceInteractionPage() {
@@ -33,33 +34,38 @@ export default function VoiceInteractionPage() {
   const [currentPersona, setCurrentPersona] = useState("Friend"); // Default persona
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+  const [clientReady, setClientReady] = useState(false);
 
   useEffect(() => {
+    setClientReady(true); // Indicate client has mounted and browser APIs can be checked
+
     // Load persona from localStorage if available
-    const savedPersona = localStorage.getItem('selectedPersonaId');
+    const savedPersonaId = localStorage.getItem('selectedPersonaId');
     const customName = localStorage.getItem('customPersonaName');
-    if (savedPersona) {
+    if (savedPersonaId) {
         const personaMap: { [key: string]: string } = {
             friend: "Friend",
             mentor: "Mentor",
             assistant: "Professional Assistant",
             comedian: "Comedian",
+            hacker: "Hacker",
+            girlfriend: "Girlfriend",
             custom: customName || "Custom Persona"
         };
-        setCurrentPersona(personaMap[savedPersona] || "Friend");
+        setCurrentPersona(personaMap[savedPersonaId] || "Friend");
     }
   }, []);
 
   useEffect(() => {
-    if (!recognition) return;
+    if (!clientReady || !recognitionInstance) return;
 
-    recognition.onresult = (event) => {
+    recognitionInstance.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setTranscribedText(transcript);
       setIsRecording(false); 
     };
 
-    recognition.onerror = (event) => {
+    recognitionInstance.onerror = (event) => {
       console.error('Speech recognition error', event.error);
       toast({
         variant: "destructive",
@@ -69,18 +75,18 @@ export default function VoiceInteractionPage() {
       setIsRecording(false);
     };
     
-    recognition.onend = () => {
+    recognitionInstance.onend = () => {
         setIsRecording(false);
     };
 
     return () => {
-      if (recognition) {
-        recognition.onresult = null;
-        recognition.onerror = null;
-        recognition.onend = null;
+      if (recognitionInstance) {
+        recognitionInstance.onresult = null;
+        recognitionInstance.onerror = null;
+        recognitionInstance.onend = null;
       }
     };
-  }, [toast]);
+  }, [clientReady, toast]);
 
 
   useEffect(() => {
@@ -88,12 +94,12 @@ export default function VoiceInteractionPage() {
     if (isLoadingAiResponse || isLoadingTts) {
       setProgress(0);
       let currentProgress = 0;
-      const increment = isLoadingAiResponse ? 10 : 20; // TTS can be faster or progress differently
+      const increment = isLoadingAiResponse ? 10 : 20; 
       const interval = isLoadingAiResponse ? 200 : 100;
       timer = setInterval(() => {
         currentProgress += increment;
         if (currentProgress > 100) {
-          setProgress(100); // Cap at 100
+          setProgress(100); 
           clearInterval(timer);
         } else {
           setProgress(currentProgress);
@@ -106,7 +112,7 @@ export default function VoiceInteractionPage() {
   }, [isLoadingAiResponse, isLoadingTts]);
 
   const handleToggleRecording = () => {
-    if (!recognition) {
+    if (!clientReady || !recognitionInstance) {
        toast({
         variant: "destructive",
         title: "Mic Check Failed!",
@@ -115,16 +121,16 @@ export default function VoiceInteractionPage() {
       return;
     }
     if (isRecording) {
-      recognition.stop();
+      recognitionInstance.stop();
       setIsRecording(false);
     } else {
-      setTranscribedText(""); // Clear previous text
-      setAiResponse(""); // Clear previous AI response
+      setTranscribedText(""); 
+      setAiResponse(""); 
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
-      recognition.start();
+      recognitionInstance.start();
       setIsRecording(true);
     }
   };
@@ -162,13 +168,12 @@ export default function VoiceInteractionPage() {
       const input: GeneratePersonalizedResponseInput = {
         userInput: transcribedText,
         persona: currentPersona,
-        pastInteractions: "User is interacting via voice/text." // Simplified past interactions for now
+        pastInteractions: "User is interacting via voice/text." 
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
       setAiResponse(output.response);
       setIsLoadingAiResponse(false);
 
-      // Now, generate speech from AI response
       if (output.response) {
         setIsLoadingTts(true);
         const speechResult = await generateSpeech(output.response);
@@ -196,6 +201,12 @@ export default function VoiceInteractionPage() {
     }
   };
 
+  const canRecord = clientReady && !!SpeechRecognitionAPI;
+  const buttonDisabled = isRecording ? false : (!canRecord || isLoadingAiResponse || isLoadingTts);
+  const buttonText = isRecording 
+    ? "Prabh is Listening..." 
+    : (canRecord ? "Tap to Speak" : "Voice Not Supported");
+
   return (
     <div className="container mx-auto py-8">
       <Card className="max-w-2xl mx-auto shadow-xl bg-card">
@@ -216,16 +227,16 @@ export default function VoiceInteractionPage() {
               variant={isRecording ? "destructive" : "default"}
               className="w-full max-w-xs rounded-full text-lg py-6 shadow-md hover:shadow-lg transition-shadow disabled:opacity-70"
               aria-label={isRecording ? "Stop recording" : "Start recording"}
-              disabled={!SpeechRecognition || isLoadingAiResponse || isLoadingTts}
+              disabled={buttonDisabled}
             >
               {isRecording ? (
                 <StopCircle className="mr-2 h-6 w-6" />
               ) : (
                 <Mic className="mr-2 h-6 w-6" />
               )}
-              {isRecording ? "Prabh is Listening..." : (SpeechRecognition ? "Tap to Speak" : "Voice Not Supported")}
+              {buttonText}
             </Button>
-            {isRecording && (
+            {isRecording && clientReady && ( // Only show if clientReady to avoid flash
               <p className="text-sm text-accent animate-pulse">Listening intently...</p>
             )}
           </div>
@@ -279,3 +290,5 @@ export default function VoiceInteractionPage() {
     </div>
   );
 }
+
+    
