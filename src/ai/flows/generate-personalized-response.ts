@@ -19,6 +19,7 @@ const GeneratePersonalizedResponseInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
   persona: z.string().describe('The selected persona/mode of the AI assistant (e.g., Friend, Mentor, Girlfriend, Hacker). This modifies your behavior within the core Prabh identity.'),
   pastInteractions: z.string().describe('A summary of recent or relevant past interactions with the user, to maintain context and memory.'),
+  currentDate: z.string().describe('The current date in "Month Day, Year" format (e.g., "July 26, 2024"). This is provided by the system for your awareness.'),
 });
 export type GeneratePersonalizedResponseInput = z.infer<
   typeof GeneratePersonalizedResponseInputSchema
@@ -43,7 +44,11 @@ const prompt = ai.definePrompt({
   tools: [getLatestNewsHeadlinesTool],
   input: {schema: GeneratePersonalizedResponseInputSchema},
   output: {schema: GeneratePersonalizedResponseOutputSchema},
-  prompt: `Adapt your response based on the current persona/mode: {{{persona}}}.
+  prompt: `{{#if currentDate}}
+For your awareness, the current date is {{{currentDate}}}. Use this information if the conversation touches upon dates or current timings.
+{{/if}}
+
+Adapt your response based on the current persona/mode: {{{persona}}}.
 Remember the user's past interactions to maintain context: {{{pastInteractions}}}
 
 User's current input: {{{userInput}}}
@@ -56,7 +61,7 @@ User's current input: {{{userInput}}}
 - **When invoking the tool:**
     - Formulate an appropriate 'query' based on the user's question.
     - If the user's question pertains to a specific country or region, set the 'country' parameter for the tool using its 2-letter ISO code (e.g., 'pk' for Pakistan, 'in' for India, 'us' for the United States).
-    - If the user asks for general "latest news" without specifics, you can use the tool with default parameters (e.g., country 'us', category 'general', a few headlines). Do not ask clarifying questions if a reasonable default can be used.
+    - If the user asks for general "latest news" without specifics, you can use the tool with reasonable default parameters (e.g., country 'us', category 'general', a few headlines). Do not ask clarifying questions if a reasonable default can be used.
 - **After the tool returns headlines (or if it returns nothing relevant):**
     - **Your primary goal is to directly answer the user's original question using the fetched information.**
     - If the headlines provide a direct answer, synthesize this information into your response.

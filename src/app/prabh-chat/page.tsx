@@ -97,7 +97,8 @@ export default function PrabhChatPage() {
       const input: GeneratePersonalizedResponseInput = {
         userInput: userMessageText,
         persona: NEUTRAL_PERSONA_NAME, 
-        pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh`}: ${m.text}`).join('\n')
+        pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh`}: ${m.text}`).join('\n'),
+        currentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
       
@@ -211,3 +212,4 @@ export default function PrabhChatPage() {
     </div>
   );
 }
+

@@ -66,7 +66,7 @@ export default function VoiceInteractionPage() {
       setIsRecording(false); 
     };
 
-    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { // Added type for event
+    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { 
       let description = `Speech recognition error: ${event.error}. Maybe try typing?`;
       if (event.error === 'network') {
         description = "Prabh's having trouble reaching the speech service. Please check your internet connection and try again. You can also type your message.";
@@ -87,9 +87,6 @@ export default function VoiceInteractionPage() {
     };
     
     recognitionInstance.onend = () => {
-        // This is called when recognition stops, either successfully or due to an error/timeout.
-        // isRecording is already set to false in onresult and onerror, 
-        // but this ensures it's false if recognition ends for other reasons (e.g. timeout, no speech).
         setIsRecording(false);
     };
 
@@ -98,13 +95,12 @@ export default function VoiceInteractionPage() {
         recognitionInstance.onresult = null;
         recognitionInstance.onerror = null;
         recognitionInstance.onend = null;
-        // It's good practice to stop recognition if the component unmounts while recording
         if (isRecording) {
             recognitionInstance.stop();
         }
       }
     };
-  }, [clientReady, toast, isRecording]); // Added isRecording to dependency array for the cleanup function
+  }, [clientReady, toast, isRecording]); 
 
 
   useEffect(() => {
@@ -140,7 +136,6 @@ export default function VoiceInteractionPage() {
     }
     if (isRecording) {
       recognitionInstance.stop();
-      // setIsRecording(false); // onend or onerror will handle this
     } else {
       setTranscribedText(""); 
       setAiResponse(""); 
@@ -152,7 +147,6 @@ export default function VoiceInteractionPage() {
         recognitionInstance.start();
         setIsRecording(true);
       } catch (error) {
-        // This catch block is for immediate errors from .start() itself, e.g., if already started.
         console.error("Error starting speech recognition:", error);
         toast({
             variant: "destructive",
@@ -197,7 +191,8 @@ export default function VoiceInteractionPage() {
       const input: GeneratePersonalizedResponseInput = {
         userInput: transcribedText,
         persona: currentPersona,
-        pastInteractions: "User is interacting via voice/text." 
+        pastInteractions: "User is interacting via voice/text." ,
+        currentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
       setAiResponse(output.response);
@@ -230,7 +225,7 @@ export default function VoiceInteractionPage() {
     }
   };
 
-  const canRecord = clientReady && !!SpeechRecognitionAPI; // Check if API itself is available
+  const canRecord = clientReady && !!SpeechRecognitionAPI; 
   const buttonDisabled = isRecording ? false : (!canRecord || isLoadingAiResponse || isLoadingTts);
   const buttonText = isRecording 
     ? "Prabh is Listening..." 
@@ -319,3 +314,4 @@ export default function VoiceInteractionPage() {
     </div>
   );
 }
+

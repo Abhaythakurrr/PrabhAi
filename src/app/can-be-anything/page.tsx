@@ -103,7 +103,8 @@ export default function CanBeAnythingPage() {
       const input: GeneratePersonalizedResponseInput = {
         userInput: userMessageText,
         persona: newPersonaForCall, 
-        pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh (${m.persona || 'AI'})`}: ${m.text}`).join('\n')
+        pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh (${m.persona || 'AI'})`}: ${m.text}`).join('\n'),
+        currentDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
       
@@ -223,3 +224,4 @@ export default function CanBeAnythingPage() {
     </div>
   );
 }
+
