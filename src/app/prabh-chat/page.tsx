@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -17,6 +18,7 @@ interface ChatMessage {
 }
 
 const NEUTRAL_PERSONA_NAME = "Prabh (Neutral)";
+const TYPING_SPEED_MS_PER_CHUNK = 75; // Average speed for word chunk
 
 export default function PrabhChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -38,14 +40,14 @@ export default function PrabhChatPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const addMessage = (text: string, sender: 'user' | 'ai') => {
-    setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, timestamp: new Date() }]);
+  const addUserMessage = (text: string) => {
+    setMessages(prev => [...prev, { id: Date.now().toString() + '_user', text, sender: 'user', timestamp: new Date() }]);
   };
 
   const handleSendMessage = async () => {
     if (!currentInput.trim()) return;
     const userMessage = currentInput;
-    addMessage(userMessage, 'user');
+    addUserMessage(userMessage);
     setCurrentInput("");
     setIsLoading(true);
     
@@ -56,18 +58,49 @@ export default function PrabhChatPage() {
         pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh`}: ${m.text}`).join('\n')
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
-      addMessage(output.response, 'ai');
+      
+      const aiFullResponse = output.response;
+      const aiMessageId = Date.now().toString() + "_ai";
+
+      // Add an empty shell for AI message
+      setMessages(prev => [...prev, { 
+        id: aiMessageId, 
+        text: "", 
+        sender: 'ai', 
+        timestamp: new Date() 
+      }]);
+      setIsLoading(false); // API call finished, now start typing animation
+
+      // Typing animation
+      const chunks = aiFullResponse.split(/(\s+)/); // Split by spaces, keeping spaces to reconstruct accurately
+      let builtResponse = "";
+      for (const chunk of chunks) {
+        if (!chunk) continue; // Skip empty chunks if any
+        builtResponse += chunk;
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessageId ? { ...msg, text: builtResponse } : msg
+          )
+        );
+        scrollToBottom();
+        await new Promise(resolve => setTimeout(resolve, TYPING_SPEED_MS_PER_CHUNK / (chunk.length > 5 ? 2 : 1) )); // Faster for longer words/chunks
+      }
 
     } catch (error) {
+      setIsLoading(false);
       console.error("Error generating response from Prabh:", error);
-      addMessage("Prabh's feeling a bit quiet right now. Try again in a moment?", 'ai');
+      // Add AI error message directly without animation
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString() + '_ai_error', 
+        text: "Prabh's feeling a bit quiet right now. Try again in a moment?", 
+        sender: 'ai', 
+        timestamp: new Date() 
+      }]);
       toast({
         variant: "destructive",
         title: "Prabh's Connection Glitch!",
         description: "Could not get a response. Please try again.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -90,7 +123,7 @@ export default function PrabhChatPage() {
                 <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                   {msg.sender === 'ai' && <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />}
                   <div className={`max-w-[75%] p-3 rounded-xl shadow-md ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-foreground border border-border'}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.text || (msg.sender === 'ai' ? "..." : "")}</p>
                      <p className="text-xs opacity-70 mt-1 text-right">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   {msg.sender === 'user' && <UserCircle className="h-8 w-8 text-secondary self-start flex-shrink-0" />}

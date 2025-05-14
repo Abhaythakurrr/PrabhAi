@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // Changed from Textarea for single line input
+import { Input } from "@/components/ui/input";
 import { Shuffle, Send, Bot, UserCircle, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ interface ChatMessage {
 }
 
 const initialPersonas = ["Friend", "Mentor", "Sarcastic Robot", "Shakespearean Poet", "Pirate Captain", "Cosmic Entity", "Helpful Coder"];
+const TYPING_SPEED_MS_PER_CHUNK = 75; // Average speed for word chunk
 
 export default function CanBeAnythingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -41,20 +43,19 @@ export default function CanBeAnythingPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  const addMessage = (text: string, sender: 'user' | 'ai', persona?: string) => {
-    setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, persona, timestamp: new Date() }]);
+  const addUserMessage = (text: string) => {
+    setMessages(prev => [...prev, { id: Date.now().toString() + '_user', text, sender: 'user', timestamp: new Date() }]);
   };
 
   const handleSendMessage = async () => {
     if (!currentInput.trim()) return;
     const userMessage = currentInput;
-    addMessage(userMessage, 'user');
+    addUserMessage(userMessage);
     setCurrentInput("");
     setIsLoading(true);
 
-    // AI adapts persona somewhat randomly for this mode from a predefined list
     const newPersona = initialPersonas[Math.floor(Math.random() * initialPersonas.length)];
-    setCurrentPersona(newPersona); // Update UI to show the new persona
+    setCurrentPersona(newPersona); 
     
     try {
       const input: GeneratePersonalizedResponseInput = {
@@ -63,23 +64,54 @@ export default function CanBeAnythingPage() {
         pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh (${m.persona || 'AI'})`}: ${m.text}`).join('\n')
       };
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
-      addMessage(output.response, 'ai', newPersona);
+      
+      const aiFullResponse = output.response;
+      const aiMessageId = Date.now().toString() + "_ai";
+
+      setMessages(prev => [...prev, { 
+        id: aiMessageId, 
+        text: "", 
+        sender: 'ai', 
+        persona: newPersona, 
+        timestamp: new Date() 
+      }]);
+      setIsLoading(false); // API call finished
+
+      // Typing animation
+      const chunks = aiFullResponse.split(/(\s+)/);
+      let builtResponse = "";
+      for (const chunk of chunks) {
+        if (!chunk) continue;
+        builtResponse += chunk;
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === aiMessageId ? { ...msg, text: builtResponse } : msg
+          )
+        );
+        scrollToBottom();
+        await new Promise(resolve => setTimeout(resolve, TYPING_SPEED_MS_PER_CHUNK / (chunk.length > 5 ? 2: 1)));
+      }
 
     } catch (error) {
+      setIsLoading(false);
       console.error("Error generating adaptive response from Prabh:", error);
-      addMessage("Prabh's feeling a bit indecisive right now and couldn't adapt. Try again?", 'ai', "System Error");
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString() + '_ai_error', 
+        text: "Prabh's feeling a bit indecisive right now and couldn't adapt. Try again?", 
+        sender: 'ai', 
+        persona: "System Error", 
+        timestamp: new Date() 
+      }]);
       toast({
         variant: "destructive",
         title: "Prabh's Persona Glitch!",
         description: "Could not get an adaptive response. Please try again.",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-8 flex flex-col h-[calc(100vh-8rem)]"> {/* Adjusted height */}
+    <div className="container mx-auto py-8 flex flex-col h-[calc(100vh-8rem)]">
       <Card className="shadow-xl flex-1 flex flex-col bg-card">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2 text-primary">
@@ -97,7 +129,7 @@ export default function CanBeAnythingPage() {
                 <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                   {msg.sender === 'ai' && <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />}
                   <div className={`max-w-[75%] p-3 rounded-xl shadow-md ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-foreground border border-border'}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    <p className="text-sm whitespace-pre-wrap">{msg.text || (msg.sender === 'ai' ? "..." : "")}</p>
                     {msg.sender === 'ai' && msg.persona && (
                       <Badge variant="outline" className="mt-2 text-xs border-accent text-accent">{msg.persona}</Badge>
                     )}
