@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -17,7 +18,7 @@ const GenerateImageFromDescriptionInputSchema = z.object({
 export type GenerateImageFromDescriptionInput = z.infer<typeof GenerateImageFromDescriptionInputSchema>;
 
 const GenerateImageFromDescriptionOutputSchema = z.object({
-  imageDataUri: z.string().describe('The generated image as a data URI.'),
+  imageDataUri: z.string().describe('The generated image as a data URI, or a placeholder URL on error.'),
 });
 export type GenerateImageFromDescriptionOutput = z.infer<typeof GenerateImageFromDescriptionOutputSchema>;
 
@@ -31,14 +32,26 @@ const generateImageFromDescriptionFlow = ai.defineFlow(
     inputSchema: GenerateImageFromDescriptionInputSchema,
     outputSchema: GenerateImageFromDescriptionOutputSchema,
   },
-  async input => {
-    const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp',
-      prompt: input.description,
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
-    return {imageDataUri: media.url!};
+  async (input): Promise<GenerateImageFromDescriptionOutput> => {
+    try {
+      const {media} = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-exp',
+        prompt: input.description,
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
+        },
+      });
+      if (media && media.url) {
+        return {imageDataUri: media.url};
+      }
+      // Fallthrough if media or media.url is unexpectedly null/undefined
+      console.warn('Image generation call succeeded but media.url was null/undefined. Input:', input.description);
+      return {imageDataUri: 'https://placehold.co/600x400.png'}; // Fallback
+    } catch (error) {
+      console.error('Error during image generation in generateImageFromDescriptionFlow. Input:', input.description, 'Error:', error);
+      // Return a placeholder if the API call fails
+      return {imageDataUri: 'https://placehold.co/600x400.png'};
+    }
   }
 );
+
