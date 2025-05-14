@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
+import { MobileHeader } from '@/components/layout/mobile-header'; // Import the new component
 import { Toaster } from "@/components/ui/toaster";
 
 const geistSans = Geist({
@@ -29,9 +30,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <SidebarProvider defaultOpen={false}>
-          <AppSidebar />
-          <SidebarRail />
+          <AppSidebar /> {/* This will be the sheet content on mobile */}
+          <SidebarRail /> {/* Desktop only */}
           <SidebarInset>
+            <MobileHeader /> {/* This is visible on mobile and contains the trigger */}
             <div className="flex-1 p-4 sm:p-6">
               {children}
             </div>
