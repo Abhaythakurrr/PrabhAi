@@ -4,12 +4,11 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageIcon as Image, Film, Sparkles, Loader2 } from "lucide-react"; // Renamed ImageIcon
-import NextImage from "next/image"; // For displaying images
+import { ImageIcon as ImageLucide, Film, Sparkles, Loader2 } from "lucide-react"; // Renamed ImageIcon
+import NextImage from "next/image"; 
 import { Progress } from "@/components/ui/progress";
-
-// Mock AI flow. In a real app, this would call your GenAI backend for image generation.
 import { generateImageFromDescription, type GenerateImageFromDescriptionInput, type GenerateImageFromDescriptionOutput } from '@/ai/flows/generate-image-from-description';
+import { useToast } from "@/hooks/use-toast";
 
 export default function MediaGenerationPage() {
   const [description, setDescription] = useState("");
@@ -17,6 +16,7 @@ export default function MediaGenerationPage() {
   const [generatedMediaUrl, setGeneratedMediaUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const { toast } = useToast();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -24,72 +24,91 @@ export default function MediaGenerationPage() {
       setProgress(0);
       let currentProgress = 0;
       timer = setInterval(() => {
-        currentProgress += 5; // Slower progress for media generation
+        currentProgress += 5; 
         if (currentProgress > 100) {
+          setProgress(100);
           clearInterval(timer);
         } else {
           setProgress(currentProgress);
         }
-      }, 300);
+      }, mediaType === 'image' ? 150 : 300); // Image gen faster progress
     } else {
       setProgress(0);
     }
     return () => clearInterval(timer);
-  }, [isLoading]);
+  }, [isLoading, mediaType]);
 
   const handleGenerateMedia = async () => {
-    if (!description) return;
+    if (!description.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Describe First, Prabh!",
+        description: `Prabh needs a description to generate a ${mediaType}.`,
+      });
+      return;
+    }
     setIsLoading(true);
     setGeneratedMediaUrl(null);
 
     try {
       if (mediaType === 'image') {
         const input: GenerateImageFromDescriptionInput = { description };
-        // const output: GenerateImageFromDescriptionOutput = await generateImageFromDescription(input);
-        // setGeneratedMediaUrl(output.imageDataUri);
-
-        // Mocking the response for now
-        await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 2000));
-        const placeholderKeywords = description.toLowerCase().split(" ").slice(0,2).join("+") || "abstract";
-        setGeneratedMediaUrl(`https://placehold.co/600x400.png?text=${encodeURIComponent('AI Generated: '+description.substring(0,20))}&font=roboto&bg=008080&txt=FFFFFF`);
+        const output: GenerateImageFromDescriptionOutput = await generateImageFromDescription(input);
+        setGeneratedMediaUrl(output.imageDataUri);
+        toast({
+          title: "Prabh Crafted an Image!",
+          description: "Your image is ready to view.",
+        });
       } else {
         // Video generation mock
         await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 3000));
-        setGeneratedMediaUrl("https://placehold.co/600x400.mp4/008080/FFFFFF?text=AI+Generated+Video"); // Placeholder video
+        // Using a static placeholder that looks like a video file URL for mock.
+        setGeneratedMediaUrl("https://placehold.co/600x400.mp4/7C4DFF/FFFFFF?text=Prabh's+Amazing+Video+(Mock)"); 
+        toast({
+          title: "Prabh's Video (Mock) Ready!",
+          description: "This is a placeholder for video generation.",
+        });
       }
     } catch (error) {
-      console.error(`Error generating ${mediaType}:`, error);
-      // In a real app, use toast notifications
-      alert(`Failed to generate ${mediaType}. Please try again.`);
+      console.error(`Error generating ${mediaType} with Prabh:`, error);
+      toast({
+        variant: "destructive",
+        title: `Prabh's ${mediaType} Machine Stalled!`,
+        description: `Failed to generate ${mediaType}. Please try again.`,
+      });
     } finally {
       setIsLoading(false);
     }
   };
+  
+  const getAiHint = (desc: string): string => {
+    return desc.trim().toLowerCase().split(/\s+/).slice(0, 2).join(" ") || "ai art";
+  };
 
   return (
     <div className="container mx-auto py-8">
-      <Card className="max-w-2xl mx-auto shadow-xl">
+      <Card className="max-w-2xl mx-auto shadow-xl bg-card">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            {mediaType === 'image' ? <Image className="h-6 w-6 text-primary" /> : <Film className="h-6 w-6 text-primary" />}
-            {mediaType === 'image' ? 'Image Generation' : 'Video Generation'}
+          <CardTitle className="text-2xl flex items-center gap-2 text-primary">
+            {mediaType === 'image' ? <ImageLucide className="h-7 w-7" /> : <Film className="h-7 w-7" />}
+            Prabh's Creative {mediaType === 'image' ? 'Image Studio' : 'Video Lab (Mock)'}
           </CardTitle>
-          <CardDescription>
-            Describe the {mediaType} you want PrabhAI to create. Uses Eden API/OpenRouter.
+          <CardDescription className="text-muted-foreground">
+            Tell Prabh what {mediaType} you envision. Powered by Genkit & Gemini (Images).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex gap-2 mb-4">
             <Button 
               variant={mediaType === 'image' ? 'default' : 'outline'} 
-              onClick={() => { setMediaType('image'); setGeneratedMediaUrl(null); }}
+              onClick={() => { setMediaType('image'); setGeneratedMediaUrl(null); setDescription(""); }}
               className="flex-1"
             >
-              <Image className="mr-2 h-4 w-4" /> Image
+              <ImageLucide className="mr-2 h-4 w-4" /> Image
             </Button>
             <Button 
               variant={mediaType === 'video' ? 'default' : 'outline'} 
-              onClick={() => { setMediaType('video'); setGeneratedMediaUrl(null); }}
+              onClick={() => { setMediaType('video'); setGeneratedMediaUrl(null); setDescription(""); }}
               className="flex-1"
             >
               <Film className="mr-2 h-4 w-4" /> Video (Mock)
@@ -97,40 +116,43 @@ export default function MediaGenerationPage() {
           </div>
 
           <Textarea
-            placeholder={`Enter a detailed description for your ${mediaType}... \ne.g., "A futuristic cityscape at sunset with flying cars" for an image, or "A short clip of a cat playing with a laser pointer" for a video.`}
+            placeholder={`Describe the ${mediaType} Prabh should create...\ne.g., "A majestic lion with a crown made of stars, cosmic background" for an image.`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="text-base"
+            className="text-base bg-background text-foreground placeholder:text-muted-foreground"
           />
           
-          <Button onClick={handleGenerateMedia} disabled={isLoading || !description} className="w-full text-lg py-3">
+          <Button onClick={handleGenerateMedia} disabled={isLoading || !description.trim()} className="w-full text-lg py-3 bg-accent hover:bg-accent/90 text-accent-foreground">
             {isLoading ? (
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             ) : (
               <Sparkles className="mr-2 h-5 w-5" />
             )}
-            {isLoading ? `Generating ${mediaType}...` : `Generate ${mediaType}`}
+            {isLoading ? `Prabh is Creating ${mediaType}...` : `Generate ${mediaType} with Prabh`}
           </Button>
 
-          {isLoading && <Progress value={progress} className="w-full" />}
+          {isLoading && <Progress value={progress} className="w-full h-2" />}
 
           {generatedMediaUrl && (
-            <div className="mt-6 border rounded-lg p-4 bg-muted/30">
-              <h3 className="text-lg font-semibold mb-2 text-center">Generated {mediaType}:</h3>
+            <div className="mt-6 border border-border rounded-lg p-4 bg-muted/20">
+              <h3 className="text-lg font-semibold mb-2 text-center text-primary">Prabh's Generated {mediaType}:</h3>
               {mediaType === 'image' ? (
                 <NextImage 
                   src={generatedMediaUrl} 
-                  alt={`AI generated image for: ${description}`} 
+                  alt={`AI generated image by Prabh for: ${description}`} 
                   width={600} 
                   height={400} 
-                  className="rounded-md shadow-md mx-auto"
-                  data-ai-hint={description.split(" ").slice(0,2).join(" ") || "placeholder image"}
+                  className="rounded-md shadow-lg mx-auto object-contain"
+                  data-ai-hint={getAiHint(description)}
+                  unoptimized={generatedMediaUrl.startsWith('data:')} // Important for base64 images
                 />
               ) : (
-                <div className="bg-black rounded-md p-2 aspect-video flex items-center justify-center mx-auto max-w-md">
-                    <p className="text-white text-center">Video Placeholder: {generatedMediaUrl.split('?text=')[1]}</p>
-                    {/* In a real app, you'd use a <video> tag here */}
+                <div className="bg-black rounded-md p-2 aspect-video flex items-center justify-center mx-auto max-w-md shadow-lg">
+                    <p className="text-white text-center p-4">
+                      This is a mock video. In a real app, Prabh would show your video here!
+                      <br/> <span className="text-sm opacity-80">({generatedMediaUrl.split('?text=')[1]?.split('&')[0] || "Video Content"})</span>
+                    </p>
                     {/* <video controls src={generatedMediaUrl} className="w-full rounded-md shadow-md"></video> */}
                 </div>
               )}
@@ -139,7 +161,7 @@ export default function MediaGenerationPage() {
         </CardContent>
         <CardFooter>
           <p className="text-xs text-muted-foreground text-center w-full">
-            Media generation is simulated. Video generation is a mock-up. Real integration requires Eden API/OpenRouter.
+            Prabh's image generation uses AI magic. Video generation is a mock-up for now.
           </p>
         </CardFooter>
       </Card>

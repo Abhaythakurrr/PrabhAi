@@ -1,45 +1,49 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Shuffle, Send, Bot, UserCircle, CornerDownLeft } from "lucide-react";
+import { Input } from "@/components/ui/input"; // Changed from Textarea for single line input
+import { Shuffle, Send, Bot, UserCircle, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { generatePersonalizedResponse, type GeneratePersonalizedResponseInput, type GeneratePersonalizedResponseOutput } from '@/ai/flows/generate-personalized-response';
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatMessage {
   id: string;
   text: string;
   sender: 'user' | 'ai';
-  persona?: string; // Persona AI used for this response
+  persona?: string;
   timestamp: Date;
 }
 
-const initialPersonas = ["Friend", "Mentor", "Sarcastic Robot", "Shakespearean Poet", "Pirate Captain"];
+const initialPersonas = ["Friend", "Mentor", "Sarcastic Robot", "Shakespearean Poet", "Pirate Captain", "Cosmic Entity", "Helpful Coder"];
 
 export default function CanBeAnythingPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentInput, setCurrentInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPersona, setCurrentPersona] = useState("Adaptive AI"); // Initial persona, will change
+  const [currentPersona, setCurrentPersona] = useState("Adaptive AI");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, scrollToBottom]);
 
   const addMessage = (text: string, sender: 'user' | 'ai', persona?: string) => {
     setMessages(prev => [...prev, { id: Date.now().toString(), text, sender, persona, timestamp: new Date() }]);
   };
-  
-  useEffect(() => {
-    // Scroll to bottom when new messages are added
-    if (scrollAreaRef.current) {
-      const scrollViewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (scrollViewport) {
-        scrollViewport.scrollTop = scrollViewport.scrollHeight;
-      }
-    }
-  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!currentInput.trim()) return;
@@ -48,52 +52,42 @@ export default function CanBeAnythingPage() {
     setCurrentInput("");
     setIsLoading(true);
 
-    // Simulate AI adapting persona based on input
-    // In a real app, an LLM would determine the best persona or generate a response that implies a persona shift.
+    // AI adapts persona somewhat randomly for this mode from a predefined list
     const newPersona = initialPersonas[Math.floor(Math.random() * initialPersonas.length)];
-    setCurrentPersona(newPersona);
+    setCurrentPersona(newPersona); // Update UI to show the new persona
     
     try {
-      // This is a MOCK call.
       const input: GeneratePersonalizedResponseInput = {
         userInput: userMessage,
-        persona: newPersona, // The AI "chooses" a new persona
-        pastInteractions: messages.slice(-5).map(m => `${m.sender}: ${m.text}`).join('\n') // Last 5 interactions
+        persona: newPersona, 
+        pastInteractions: messages.slice(-5).map(m => `${m.sender === 'user' ? 'User' : `Prabh (${m.persona || 'AI'})`}: ${m.text}`).join('\n')
       };
-      // const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
-      // addMessage(output.response, 'ai', newPersona);
-
-      // Mocking the response
-      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
-      let aiResponseText = "";
-      if (newPersona === "Friend") aiResponseText = `Hey there! So you said "${userMessage}". That's cool!`;
-      else if (newPersona === "Mentor") aiResponseText = `Regarding your statement "${userMessage}", let's consider its implications...`;
-      else if (newPersona === "Sarcastic Robot") aiResponseText = `Oh, joy. Another human utterance: "${userMessage}". I'll process that with my usual lack of enthusiasm.`;
-      else if (newPersona === "Shakespearean Poet") aiResponseText = `Hark! Thy words, "${userMessage}", doth resonate within my circuits verily!`;
-      else if (newPersona === "Pirate Captain") aiResponseText = `Arrr, ye say "${userMessage}"? Shiver me timbers, that be interestin'!`;
-      else aiResponseText = `Okay, you mentioned "${userMessage}". I'm now responding as a ${newPersona}.`;
-      
-      addMessage(aiResponseText, 'ai', newPersona);
+      const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
+      addMessage(output.response, 'ai', newPersona);
 
     } catch (error) {
-      console.error("Error generating adaptive response:", error);
-      addMessage("Apologies, I encountered a hiccup and couldn't quite adapt my response. Please try again.", 'ai', "System");
+      console.error("Error generating adaptive response from Prabh:", error);
+      addMessage("Prabh's feeling a bit indecisive right now and couldn't adapt. Try again?", 'ai', "System Error");
+      toast({
+        variant: "destructive",
+        title: "Prabh's Persona Glitch!",
+        description: "Could not get an adaptive response. Please try again.",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto py-8 flex flex-col h-[calc(100vh-10rem)]"> {/* Adjust height as needed */}
-      <Card className="shadow-xl flex-1 flex flex-col">
+    <div className="container mx-auto py-8 flex flex-col h-[calc(100vh-8rem)]"> {/* Adjusted height */}
+      <Card className="shadow-xl flex-1 flex flex-col bg-card">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2">
-            <Shuffle className="h-6 w-6 text-primary" />
-            Can Be Anything Mode
+          <CardTitle className="text-2xl flex items-center gap-2 text-primary">
+            <Shuffle className="h-7 w-7" />
+            Prabh Can Be Anything!
           </CardTitle>
-          <CardDescription>
-            Interact with PrabhAI and watch its persona adapt based on the conversation.
-            Current AI Persona: <Badge variant="secondary" className="ml-1">{currentPersona}</Badge>
+          <CardDescription className="text-muted-foreground">
+            Watch Prabh's persona shift with each interaction. Currently: <Badge variant="secondary" className="ml-1 bg-accent text-accent-foreground">{currentPersona}</Badge>
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
@@ -102,47 +96,49 @@ export default function CanBeAnythingPage() {
               {messages.map((msg) => (
                 <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
                   {msg.sender === 'ai' && <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />}
-                  <div className={`max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border'}`}>
+                  <div className={`max-w-[75%] p-3 rounded-xl shadow-md ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-foreground border border-border'}`}>
                     <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
                     {msg.sender === 'ai' && msg.persona && (
-                      <Badge variant="outline" className="mt-1 text-xs">{msg.persona}</Badge>
+                      <Badge variant="outline" className="mt-2 text-xs border-accent text-accent">{msg.persona}</Badge>
                     )}
-                     <p className="text-xs opacity-60 mt-1 text-right">{msg.timestamp.toLocaleTimeString()}</p>
+                     <p className="text-xs opacity-70 mt-1 text-right">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
-                  {msg.sender === 'user' && <UserCircle className="h-8 w-8 text-muted-foreground self-start flex-shrink-0" />}
+                  {msg.sender === 'user' && <UserCircle className="h-8 w-8 text-secondary self-start flex-shrink-0" />}
                 </div>
               ))}
               {isLoading && (
                 <div className="flex items-end gap-2">
                   <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />
-                  <div className="max-w-[70%] p-3 rounded-lg bg-card border">
-                    <p className="text-sm animate-pulse">Thinking...</p>
+                  <div className="max-w-[70%] p-3 rounded-xl bg-muted/30 border border-border">
+                    <p className="text-sm flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-accent"/> Prabh is adapting...
+                    </p>
                   </div>
                 </div>
               )}
             </div>
           </ScrollArea>
         </CardContent>
-        <CardFooter className="p-4 border-t">
+        <CardFooter className="p-4 border-t border-border">
           <div className="flex w-full items-center gap-2">
             <Input
               type="text"
-              placeholder="Type your message and see how AI adapts..."
+              placeholder="Chat with Prabh and see the magic..."
               value={currentInput}
               onChange={(e) => setCurrentInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 bg-background text-foreground placeholder:text-muted-foreground"
               aria-label="Chat input"
             />
-            <Button onClick={handleSendMessage} disabled={isLoading || !currentInput.trim()} aria-label="Send message">
-              <Send className="h-4 w-4" />
+            <Button onClick={handleSendMessage} disabled={isLoading || !currentInput.trim()} aria-label="Send message" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Send className="h-5 w-5" />
             </Button>
           </div>
         </CardFooter>
       </Card>
        <p className="text-xs text-muted-foreground text-center w-full mt-2">
-            Persona adaptation is simulated. True "Can Be Anything" mode requires advanced LLM capabilities.
+            Prabh's persona adaptation is AI-driven. How cool is that?!
         </p>
     </div>
   );
