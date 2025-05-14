@@ -67,7 +67,6 @@ export default function VoiceInteractionPage() {
     };
 
     recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { // Added type for event
-      console.error('Speech recognition error', event.error);
       let description = `Speech recognition error: ${event.error}. Maybe try typing?`;
       if (event.error === 'network') {
         description = "Prabh's having trouble reaching the speech service. Please check your internet connection and try again. You can also type your message.";
