@@ -10,19 +10,20 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {PRABH_CORE_PROMPT} from '@/ai/persona';
 import {z} from 'genkit';
 
 const GeneratePersonalizedResponseInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
-  persona: z.string().describe('The selected persona of the AI assistant.'),
-  pastInteractions: z.string().describe('The past interactions with the user.'),
+  persona: z.string().describe('The selected persona/mode of the AI assistant (e.g., Friend, Mentor, Girlfriend, Hacker). This modifies your behavior within the core Prabh identity.'),
+  pastInteractions: z.string().describe('A summary of recent or relevant past interactions with the user, to maintain context and memory.'),
 });
 export type GeneratePersonalizedResponseInput = z.infer<
   typeof GeneratePersonalizedResponseInputSchema
 >;
 
 const GeneratePersonalizedResponseOutputSchema = z.object({
-  response: z.string().describe('The personalized response from the AI assistant.'),
+  response: z.string().describe('The personalized response from Prabh, embodying the core identity and selected persona/mode.'),
 });
 export type GeneratePersonalizedResponseOutput = z.infer<
   typeof GeneratePersonalizedResponseOutputSchema
@@ -36,17 +37,15 @@ export async function generatePersonalizedResponse(
 
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedResponsePrompt',
+  system: PRABH_CORE_PROMPT,
   input: {schema: GeneratePersonalizedResponseInputSchema},
   output: {schema: GeneratePersonalizedResponseOutputSchema},
-  prompt: `You are an AI assistant with the persona: {{{persona}}}.
+  prompt: `Adapt your response based on the current persona/mode: {{{persona}}}.
+Remember the user's past interactions: {{{pastInteractions}}}
 
-You will use the past interactions with the user to generate a personalized response.
+User's current input: {{{userInput}}}
 
-Past Interactions: {{{pastInteractions}}}
-
-User Input: {{{userInput}}}
-
-Response: `,
+Respond as Prabh:`,
 });
 
 const generatePersonalizedResponseFlow = ai.defineFlow(
@@ -60,3 +59,4 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
     return output!;
   }
 );
+

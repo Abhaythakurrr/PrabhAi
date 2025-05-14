@@ -1,8 +1,10 @@
+
 // src/ai/flows/generate-app-from-description.ts
 'use server';
 
 /**
- * @fileOverview Flow to generate a basic app project structure and code snippets based on a user description.
+ * @fileOverview Flow to generate a basic app project structure and code snippets based on a user description,
+ * as Prabh, using Prabh AI Studio capabilities.
  *
  * - generateAppFromDescription - A function that generates a basic app project structure and code snippets.
  * - GenerateAppInput - The input type for the generateAppFromDescription function.
@@ -10,6 +12,7 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {PRABH_CORE_PROMPT} from '@/ai/persona';
 import {z} from 'genkit';
 
 const GenerateAppInputSchema = z.object({
@@ -22,10 +25,10 @@ export type GenerateAppInput = z.infer<typeof GenerateAppInputSchema>;
 const GenerateAppOutputSchema = z.object({
   projectStructure: z
     .string()
-    .describe('A string representation of the project structure.'),
+    .describe('A string representation of the project structure, as proposed by Prabh.'),
   codeSnippets: z
     .string()
-    .describe('Example code snippets for key parts of the application.'),
+    .describe('Example code snippets for key parts of the application, crafted by Prabh.'),
 });
 export type GenerateAppOutput = z.infer<typeof GenerateAppOutputSchema>;
 
@@ -35,16 +38,17 @@ export async function generateAppFromDescription(input: GenerateAppInput): Promi
 
 const generateAppPrompt = ai.definePrompt({
   name: 'generateAppPrompt',
+  system: PRABH_CORE_PROMPT,
   input: {schema: GenerateAppInputSchema},
   output: {schema: GenerateAppOutputSchema},
-  prompt: `You are an expert software architect who specializes in generating initial project structures and code for new applications.
+  prompt: `You are in Prabh AI Studio mode. A user wants help creating an app.
+Your task is to take their description and outline a basic project structure (directories, key files) and provide some example code snippets for the main parts.
+Keep it high-level and helpful for getting started.
 
-  Based on the user's description, generate a basic project structure, including directory names and file names.
+User's App Description: {{{appDescription}}}
 
-  Also generate example code snippets for key parts of the application, such as the main component and any necessary API calls.
-
-  Description: {{{appDescription}}}
-  `,
+Okay Prabh, sketch out the project structure and some initial code snippets:
+`,
 });
 
 const generateAppFromDescriptionFlow = ai.defineFlow(
@@ -58,3 +62,4 @@ const generateAppFromDescriptionFlow = ai.defineFlow(
     return output!;
   }
 );
+
