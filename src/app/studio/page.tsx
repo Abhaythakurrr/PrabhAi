@@ -81,12 +81,12 @@ export default function StudioPage() {
           </div>
           <div className="md:w-1/2 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center p-4 md:p-0 min-h-[200px] md:min-h-0">
              <Image 
-                src="https://placehold.co/600x400/1F1F1F/00FFFF.png?text=Prabh+Studio+Interface" 
+                src="https://placehold.co/600x400.png" 
                 alt="Prabh AI Studio Interface Mockup" 
                 width={600} 
                 height={400} 
                 className="rounded-lg shadow-2xl object-cover"
-                data-ai-hint="developer coding interface"
+                data-ai-hint="coding interface"
             />
           </div>
         </div>

@@ -44,7 +44,7 @@ export default function DashboardPage() {
               width={600} 
               height={400} 
               className="rounded-lg mb-2"
-              data-ai-hint="artificial intelligence abstract"
+              data-ai-hint="AI personalization"
             />
             <CardTitle>Personalized Experience</CardTitle>
             <CardDescription>PrabhAI adapts to you with its Persona Engine and Unforgettable Memory.</CardDescription>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
               width={600} 
               height={400} 
               className="rounded-lg mb-2"
-              data-ai-hint="futuristic technology"
+              data-ai-hint="AI capabilities"
             />
             <CardTitle>Powerful AI Features</CardTitle>
             <CardDescription>Leverage cutting-edge AI for real-time knowledge, media generation, and more.</CardDescription>
