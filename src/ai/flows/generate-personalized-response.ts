@@ -1,3 +1,4 @@
+
 // src/ai/flows/generate-personalized-response.ts
 'use server';
 
@@ -52,6 +53,7 @@ Instructions for Prabh:
 - Evaluate if the tool is necessary. For example, if the user says "hello", you don't need news. If they ask "what's the latest in tech?", you definitely should use the tool.
 - When you use the tool and present news, integrate the information naturally into your response. You can summarize, list key points, or offer to provide more details, all while maintaining your selected persona.
 - Clearly state that you're providing current information, e.g., "Just checked the latest for you, Prabh..." or "Here's what's buzzing right now...".
+- After any tool use, ensure you provide a final textual response to the user.
 
 Respond as Prabh:`,
 });
@@ -64,6 +66,20 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    
+    if (!output || typeof output.response !== 'string') {
+      // Log this situation for debugging purposes.
+      console.warn(
+        'generatePersonalizedResponsePrompt did not return a valid output or output.response was not a string. Input:', 
+        JSON.stringify(input), 
+        'Actual output:', 
+        JSON.stringify(output)
+      );
+      // Provide a fallback response that fits the schema to prevent further errors.
+      return { response: "Hmm, Prabh's a bit tongue-tied after that. Try rephrasing or asking something else, will you?" };
+    }
+    
+    return output; // Output is now confirmed to be valid and non-null.
   }
 );
+
