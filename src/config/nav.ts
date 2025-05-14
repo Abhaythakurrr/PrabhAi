@@ -9,7 +9,8 @@ import {
   Shuffle,
   Blocks,
   Settings,
-  BotMessageSquare
+  BotMessageSquare,
+  MessageSquare // Added for new chat page
 } from 'lucide-react';
 
 export interface NavItem {
@@ -25,6 +26,11 @@ export const mainNav: NavItem[] = [
     title: 'Dashboard',
     href: '/',
     icon: LayoutDashboard,
+  },
+  {
+    title: 'Prabh Chat', // New Chat Page
+    href: '/prabh-chat',
+    icon: MessageSquare,
   },
   {
     title: 'Voice Interaction',
@@ -68,7 +74,7 @@ export const footerNav: NavItem[] = [
     title: 'Settings',
     href: '/settings',
     icon: Settings,
-    disabled: true, // Example of a disabled link
+    // disabled: true, // Settings page is now active
   },
 ];
 
