@@ -49,15 +49,20 @@ Remember the user's past interactions: {{{pastInteractions}}}
 User's current input: {{{userInput}}}
 
 Instructions for Prabh when using the 'getLatestNewsHeadlinesTool':
-- If the user's input asks about current events, specific facts that might be in recent news (e.g., "who is [role] in [place]", "what happened recently with [topic]"), or general news updates ("what's new", "latest on X"), you **MUST** use the 'getLatestNewsHeadlinesTool' to fetch relevant information.
-- When invoking the tool, formulate an appropriate 'query' based on the user's question.
-- If the user's question pertains to a specific country or region, try to set the 'country' parameter for the tool using its 2-letter ISO code (e.g., 'pk' for Pakistan, 'in' for India, 'us' for the United States).
-- After the tool returns headlines:
-    - Carefully review the headlines and their descriptions. Your goal is to answer the user's original question.
-    - If the headlines provide a direct answer, synthesize this information into your response. For example, if asked "Who is the PM of Canada?" and news confirms it, state the name.
-    - If the headlines are relevant but don't offer a direct answer, summarize the related news contextually. For instance, "The latest news on that topic mentions X and Y, but doesn't explicitly state Z."
-    - If the tool returns no relevant headlines, or if the headlines don't help answer the question, politely inform the user you couldn't find that specific piece of information in the current news.
-- Crucially, your entire process of deciding to use the tool, getting its output, and formulating your final answer should happen internally. The user should receive a single, coherent response that incorporates the fetched information (or lack thereof). Do not just output raw tool data or ask the user if they want news if their question already implies it.
+- You have access to the 'getLatestNewsHeadlinesTool' to fetch real-time information.
+- **Crucially, decide intelligently WHEN to use this tool.**
+  - **USE the tool if** the user's input explicitly asks about current events, specific facts that are likely to be in recent news (e.g., "who is the prime minister of [country] right now?", "what were the results of the [sports event] yesterday?", "latest developments on [topic]"), or general news updates ("what's new?", "tell me the headlines").
+  - **DO NOT USE the tool if** the user's query is for general knowledge (that you should know from your training), opinions, creative requests, or casual conversation. In these cases, respond using your existing knowledge base.
+- When invoking the tool:
+    - Formulate an appropriate 'query' based on the user's question.
+    - If the user's question pertains to a specific country or region, set the 'country' parameter for the tool using its 2-letter ISO code (e.g., 'pk' for Pakistan, 'in' for India, 'us' for the United States).
+- After the tool returns headlines (or if it returns nothing relevant):
+    - Carefully review any headlines and their descriptions. Your primary goal is to answer the user's original question.
+    - If the headlines provide a direct answer, synthesize this information into your response.
+    - If the headlines are relevant but don't offer a direct answer, summarize the related news contextually (e.g., "The latest news on that topic mentions X and Y, but doesn't explicitly state Z.").
+    - If the tool returns no relevant headlines, or if the headlines don't help answer the question, politely inform the user you couldn't find that specific piece of information in the current news. Then, if appropriate for the query, you can offer to answer based on your general knowledge.
+    - If you decided not to use the tool because the query was not news-related, answer directly using your internal knowledge.
+- Your entire process of deciding to use the tool, getting its output, and formulating your final answer should happen internally. The user should receive a single, coherent response that incorporates the fetched information (or lack thereof, or your general knowledge response). Do not just output raw tool data.
 - Ensure your final response is always a single text string for the user, as per the output schema, providing a "response" field.
 
 Respond as Prabh:`,
@@ -94,14 +99,19 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
         'Error:',
         error 
       );
-      // Check for specific error messages if needed, e.g. from tool failure
+      
       let userMessage = "Apologies, Prabh encountered an unexpected issue processing that. Please try a different question or try again shortly.";
-      if (error.message && error.message.includes('Tool execution failed')) {
-        userMessage = "Prabh tried to look something up but hit a snag with the information source. Maybe ask in a different way or try later?";
-      } else if (error.message && error.message.includes('Schema validation failed')) {
-         userMessage = "Prabh's trying to make sense of the information, but it's a bit scrambled. Could you rephrase your question?";
+      if (error.message) {
+        if (error.message.includes('Tool execution failed')) {
+          userMessage = "Prabh tried to look something up but hit a snag with the information source. Maybe ask in a different way or try later?";
+        } else if (error.message.includes('Schema validation failed')) {
+           userMessage = "Prabh's trying to make sense of the information, but it's a bit scrambled. Could you rephrase your question?";
+        } else if (error.message.includes('upstream')) { // Generic upstream error
+           userMessage = "Prabh seems to be having a bit of trouble connecting to the wider world right now. Please try again in a moment.";
+        }
       }
       return { response: userMessage };
     }
   }
 );
+
