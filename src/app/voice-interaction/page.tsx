@@ -16,7 +16,8 @@ const SpeechRecognitionAPI =
   typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 let recognitionInstance: SpeechRecognition | null = null;
 
-if (SpeechRecognitionAPI) {
+// Initialize recognitionInstance only on the client-side after SpeechRecognitionAPI is confirmed
+if (typeof window !== 'undefined' && SpeechRecognitionAPI) {
   recognitionInstance = new SpeechRecognitionAPI();
   recognitionInstance.continuous = false;
   recognitionInstance.lang = 'en-US';
@@ -65,17 +66,31 @@ export default function VoiceInteractionPage() {
       setIsRecording(false); 
     };
 
-    recognitionInstance.onerror = (event) => {
+    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { // Added type for event
       console.error('Speech recognition error', event.error);
+      let description = `Speech recognition error: ${event.error}. Maybe try typing?`;
+      if (event.error === 'network') {
+        description = "Prabh's having trouble reaching the speech service. Please check your internet connection and try again. You can also type your message.";
+      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        description = "Prabh can't access your microphone. Please check your browser's microphone permissions for this site. You can also type your message.";
+      } else if (event.error === 'no-speech') {
+        description = "Prabh didn't hear anything. Make sure your mic is working and try speaking again. Or, type your message!";
+      } else if (event.error === 'audio-capture') {
+        description = "Prabh couldn't capture audio. Is another app using your microphone? Try closing other apps or restarting your browser. You can also type!";
+      }
+      
       toast({
         variant: "destructive",
-        title: "Prabh's Ears Are Clogged!",
-        description: `Speech recognition error: ${event.error}. Maybe try typing?`,
+        title: "Prabh's Ears Are Acting Up!",
+        description: description,
       });
       setIsRecording(false);
     };
     
     recognitionInstance.onend = () => {
+        // This is called when recognition stops, either successfully or due to an error/timeout.
+        // isRecording is already set to false in onresult and onerror, 
+        // but this ensures it's false if recognition ends for other reasons (e.g. timeout, no speech).
         setIsRecording(false);
     };
 
@@ -84,9 +99,13 @@ export default function VoiceInteractionPage() {
         recognitionInstance.onresult = null;
         recognitionInstance.onerror = null;
         recognitionInstance.onend = null;
+        // It's good practice to stop recognition if the component unmounts while recording
+        if (isRecording) {
+            recognitionInstance.stop();
+        }
       }
     };
-  }, [clientReady, toast]);
+  }, [clientReady, toast, isRecording]); // Added isRecording to dependency array for the cleanup function
 
 
   useEffect(() => {
@@ -122,7 +141,7 @@ export default function VoiceInteractionPage() {
     }
     if (isRecording) {
       recognitionInstance.stop();
-      setIsRecording(false);
+      // setIsRecording(false); // onend or onerror will handle this
     } else {
       setTranscribedText(""); 
       setAiResponse(""); 
@@ -130,8 +149,19 @@ export default function VoiceInteractionPage() {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
-      recognitionInstance.start();
-      setIsRecording(true);
+      try {
+        recognitionInstance.start();
+        setIsRecording(true);
+      } catch (error) {
+        // This catch block is for immediate errors from .start() itself, e.g., if already started.
+        console.error("Error starting speech recognition:", error);
+        toast({
+            variant: "destructive",
+            title: "Mic Busy!",
+            description: "Prabh couldn't start listening. Is the mic already active or an issue with the speech service?"
+        });
+        setIsRecording(false);
+      }
     }
   };
 
@@ -201,7 +231,7 @@ export default function VoiceInteractionPage() {
     }
   };
 
-  const canRecord = clientReady && !!SpeechRecognitionAPI;
+  const canRecord = clientReady && !!SpeechRecognitionAPI; // Check if API itself is available
   const buttonDisabled = isRecording ? false : (!canRecord || isLoadingAiResponse || isLoadingTts);
   const buttonText = isRecording 
     ? "Prabh is Listening..." 
@@ -236,7 +266,7 @@ export default function VoiceInteractionPage() {
               )}
               {buttonText}
             </Button>
-            {isRecording && clientReady && ( // Only show if clientReady to avoid flash
+            {isRecording && clientReady && ( 
               <p className="text-sm text-accent animate-pulse">Listening intently...</p>
             )}
           </div>
@@ -290,5 +320,3 @@ export default function VoiceInteractionPage() {
     </div>
   );
 }
-
-    
