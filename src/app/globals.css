@@ -113,3 +113,17 @@
     @apply bg-background text-foreground font-sans; /* Ensure Geist Sans is applied via Tailwind */
   }
 }
+
+@layer utilities {
+  @keyframes spin-slow-kf {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .animate-spin-slow {
+    animation: spin-slow-kf 3s linear infinite;
+  }
+}
