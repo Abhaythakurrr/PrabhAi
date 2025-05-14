@@ -92,7 +92,7 @@ export default function CanBeAnythingPage() {
         await new Promise(resolve => setTimeout(resolve, TYPING_SPEED_MS_PER_CHUNK / (chunk.length > 5 ? 2: 1)));
       }
 
-    } catch (error) {
+    } catch (error: any) {
       setIsLoading(false);
       console.error("Error generating adaptive response from Prabh:", error);
       setMessages(prev => [...prev, { 
@@ -111,7 +111,7 @@ export default function CanBeAnythingPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 flex flex-col h-[calc(100vh-8rem)]">
+    <div className="container mx-auto py-8 flex flex-col flex-1"> {/* Adjusted height */}
       <Card className="shadow-xl flex-1 flex flex-col bg-card">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2 text-primary">
@@ -138,7 +138,7 @@ export default function CanBeAnythingPage() {
                   {msg.sender === 'user' && <UserCircle className="h-8 w-8 text-secondary self-start flex-shrink-0" />}
                 </div>
               ))}
-              {isLoading && (
+              {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && ( // Show adapting only after user message and before AI shell
                 <div className="flex items-end gap-2">
                   <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />
                   <div className="max-w-[70%] p-3 rounded-xl bg-muted/30 border border-border">

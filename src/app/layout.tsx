@@ -32,7 +32,7 @@ export default function RootLayout({
           <AppSidebar />
           <SidebarRail />
           <SidebarInset>
-            <div className="flex-1 p-4 md:p-6 lg:p-8">
+            <div className="flex-1 p-4 sm:p-6">
               {children}
             </div>
           </SidebarInset>
