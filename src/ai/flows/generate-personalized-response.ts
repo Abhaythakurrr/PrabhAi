@@ -12,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {PRABH_CORE_PROMPT} from '@/ai/persona';
 import {z} from 'genkit';
+import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool';
 
 const GeneratePersonalizedResponseInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
@@ -38,12 +39,19 @@ export async function generatePersonalizedResponse(
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedResponsePrompt',
   system: PRABH_CORE_PROMPT,
+  tools: [getLatestNewsHeadlinesTool], // Added the news tool
   input: {schema: GeneratePersonalizedResponseInputSchema},
   output: {schema: GeneratePersonalizedResponseOutputSchema},
   prompt: `Adapt your response based on the current persona/mode: {{{persona}}}.
 Remember the user's past interactions: {{{pastInteractions}}}
 
 User's current input: {{{userInput}}}
+
+Instructions for Prabh:
+- If the user's input seems to ask about current events, recent news, "what's new", "what is happening in [topic/place]", or any query that would clearly benefit from real-time information, you **MUST** consider using the 'getLatestNewsHeadlinesTool' to fetch the latest updates.
+- Evaluate if the tool is necessary. For example, if the user says "hello", you don't need news. If they ask "what's the latest in tech?", you definitely should use the tool.
+- When you use the tool and present news, integrate the information naturally into your response. You can summarize, list key points, or offer to provide more details, all while maintaining your selected persona.
+- Clearly state that you're providing current information, e.g., "Just checked the latest for you, Prabh..." or "Here's what's buzzing right now...".
 
 Respond as Prabh:`,
 });
@@ -59,4 +67,3 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
     return output!;
   }
 );
-
