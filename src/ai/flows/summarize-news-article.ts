@@ -10,7 +10,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {PRABH_CORE_PROMPT} from '@/ai/persona';
+import {getSystemPrompt} from '@/ai/persona';
 import {z} from 'genkit';
 
 const SummarizeNewsArticleInputSchema = z.object({
@@ -29,7 +29,7 @@ export async function summarizeNewsArticle(input: SummarizeNewsArticleInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'summarizeNewsArticlePrompt',
-  system: PRABH_CORE_PROMPT,
+  // System prompt is now generated dynamically in the flow
   input: {schema: SummarizeNewsArticleInputSchema},
   output: {schema: SummarizeNewsArticleOutputSchema},
   prompt: `Alright, I've got this news article here. My task is to give a crisp summary of it.
@@ -47,14 +47,19 @@ const summarizeNewsArticleFlow = ai.defineFlow(
     outputSchema: SummarizeNewsArticleOutputSchema,
   },
   async (input): Promise<SummarizeNewsArticleOutput> => {
+    const systemMessage = getSystemPrompt("Prabh - Insightful Summarizer", "User has provided an article for summarization.");
     try {
-      const {output} = await prompt(input);
+      const {output} = await prompt({
+        system: systemMessage,
+        ...input
+      });
       if (output && typeof output.summary === 'string' && output.summary.trim() !== "") {
         return output;
       }
       console.warn(
         'summarizeNewsArticlePrompt returned a malformed or empty output. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Actual output from prompt call:',
         JSON.stringify(output)
       );
@@ -63,6 +68,7 @@ const summarizeNewsArticleFlow = ai.defineFlow(
       console.error(
         'Error during summarizeNewsArticleFlow execution. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Error:',
         error
       );

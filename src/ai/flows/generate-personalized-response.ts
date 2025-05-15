@@ -11,7 +11,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {PRABH_CORE_PROMPT} from '@/ai/persona';
+import {getSystemPrompt} from '@/ai/persona';
 import {z} from 'genkit';
 import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool';
 
@@ -40,7 +40,7 @@ export async function generatePersonalizedResponse(
 
 const prompt = ai.definePrompt({
   name: 'generatePersonalizedResponsePrompt',
-  system: PRABH_CORE_PROMPT,
+  // System prompt is now generated dynamically in the flow
   tools: [getLatestNewsHeadlinesTool],
   input: {schema: GeneratePersonalizedResponseInputSchema},
   output: {schema: GeneratePersonalizedResponseOutputSchema},
@@ -48,16 +48,13 @@ const prompt = ai.definePrompt({
 For your awareness, the current date is {{{currentDate}}}. Use this information if the conversation touches upon dates or current timings.
 {{/if}}
 
-Adapt your response based on the current persona/mode: {{{persona}}}.
-Remember the user's past interactions to maintain context: {{{pastInteractions}}}
-
 User's current input: {{{userInput}}}
 
 **Instructions for Prabh regarding the 'getLatestNewsHeadlinesTool':**
 
 You have access to the 'getLatestNewsHeadlinesTool' to fetch real-time information. However, in general conversation, prioritize your internal knowledge and persona.
 
-- **WHEN TO USE THE TOOL (SPARINGLY):**
+- **WHEN TO USE THE TOOL (SPARINGLY for general chat):**
   - **ONLY USE the tool if** the user's input *explicitly asks for a news lookup* or the *latest headlines*. Examples: "What's the latest news on X?", "Check the news headlines for India," "Tell me what the news says about Y," "Any updates on [topic]?"
   - **DO NOT USE the tool automatically for every general knowledge question about current affairs** (e.g., "Who is the prime minister of [country]?"). For these, first try to answer from your training data. If your information might be outdated, you can state that or offer to look up the latest news as a follow-up action if the user confirms.
 
@@ -86,8 +83,12 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
     outputSchema: GeneratePersonalizedResponseOutputSchema,
   },
   async (input): Promise<GeneratePersonalizedResponseOutput> => {
+    const systemMessage = getSystemPrompt(input.persona, input.pastInteractions);
     try {
-      const { output } = await prompt(input);
+      const { output } = await prompt({
+        system: systemMessage,
+        ...input
+      });
 
       if (output && typeof output.response === 'string' && output.response.trim() !== "") {
         return output;
@@ -95,6 +96,7 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
         console.warn(
           'generatePersonalizedResponsePrompt returned a null, empty, or malformed output. Input:',
           JSON.stringify(input),
+          'System Message:', systemMessage,
           'Actual output from prompt call:',
           JSON.stringify(output) 
         );
@@ -104,6 +106,7 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
       console.error(
         'Error during prompt execution (e.g., schema validation, LLM error, tool error) in generatePersonalizedResponseFlow. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Error:',
         error 
       );
@@ -122,4 +125,3 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
     }
   }
 );
-

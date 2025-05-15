@@ -12,7 +12,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {PRABH_CORE_PROMPT} from '@/ai/persona';
+import {getSystemPrompt} from '@/ai/persona';
 import {z} from 'genkit';
 
 const GenerateAppInputSchema = z.object({
@@ -38,7 +38,7 @@ export async function generateAppFromDescription(input: GenerateAppInput): Promi
 
 const generateAppPrompt = ai.definePrompt({
   name: 'generateAppPrompt',
-  system: PRABH_CORE_PROMPT,
+  // System prompt is now generated dynamically in the flow
   input: {schema: GenerateAppInputSchema},
   output: {schema: GenerateAppOutputSchema},
   prompt: `You are in Prabh AI Studio mode. A user wants help creating an app.
@@ -58,14 +58,19 @@ const generateAppFromDescriptionFlow = ai.defineFlow(
     outputSchema: GenerateAppOutputSchema,
   },
   async (input): Promise<GenerateAppOutput> => {
+    const systemMessage = getSystemPrompt("Prabh - AI Studio Architect", `User is in Prabh AI Studio and wants to generate an app outline for: ${input.appDescription}`);
     try {
-      const {output} = await generateAppPrompt(input);
+      const {output} = await generateAppPrompt({
+        system: systemMessage,
+        ...input
+      });
       if (output && output.projectStructure && output.codeSnippets && output.projectStructure.trim() !== "" && output.codeSnippets.trim() !== "") {
         return output;
       }
       console.warn(
         'generateAppPrompt returned a malformed or empty output. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Actual output from prompt call:',
         JSON.stringify(output)
       );
@@ -77,6 +82,7 @@ const generateAppFromDescriptionFlow = ai.defineFlow(
       console.error(
         'Error during generateAppFromDescriptionFlow execution. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Error:',
         error
       );

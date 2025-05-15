@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {PRABH_CORE_PROMPT} from '@/ai/persona';
+import {getSystemPrompt} from '@/ai/persona';
 import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool'; 
 import {z} from 'genkit';
 
@@ -36,7 +36,7 @@ export async function conductDeepResearch(input: ConductDeepResearchInput): Prom
 
 const researchPrompt = ai.definePrompt({
   name: 'conductDeepResearchPrompt',
-  system: PRABH_CORE_PROMPT,
+  // System prompt is now generated dynamically in the flow
   tools: [getLatestNewsHeadlinesTool], 
   input: {schema: ConductDeepResearchInputSchema},
   output: {schema: ConductDeepResearchOutputSchema},
@@ -71,8 +71,12 @@ const conductDeepResearchFlow = ai.defineFlow(
     outputSchema: ConductDeepResearchOutputSchema,
   },
   async (input): Promise<ConductDeepResearchOutput> => {
+    const systemMessage = getSystemPrompt("Prabh - Deep Research Analyst", `User is requesting deep research on: ${input.userQuery}`);
     try {
-      const { output } = await researchPrompt(input);
+      const { output } = await researchPrompt({
+        system: systemMessage,
+        ...input
+      });
 
       if (output && output.reportTitle && output.executiveSummary && output.detailedFindings) {
         return output;
@@ -80,6 +84,7 @@ const conductDeepResearchFlow = ai.defineFlow(
         console.warn(
           'conductDeepResearchPrompt returned a malformed or incomplete output. Input:',
           JSON.stringify(input),
+          'System Message:', systemMessage,
           'Actual output from prompt call:',
           JSON.stringify(output)
         );
@@ -96,6 +101,7 @@ const conductDeepResearchFlow = ai.defineFlow(
       console.error(
         'Error during conductDeepResearchFlow execution. Input:',
         JSON.stringify(input),
+        'System Message:', systemMessage,
         'Error:',
         error
       );
