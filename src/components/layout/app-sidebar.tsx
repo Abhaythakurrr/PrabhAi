@@ -37,8 +37,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <SidebarHeader className="flex items-center justify-between p-4">
         <Link href="/" className="flex items-center gap-2">
-          {/* Added a div wrapper for AppLogoIcon to handle relative positioning and dimensions */}
-          <div className="relative h-8 w-8">
+          {/* This div provides context for AppLogoIcon's Image component */}
+          <div className="relative h-8 w-8"> 
             <AppLogoIcon />
           </div>
           {open && <span className="text-xl font-semibold">PrabhAI</span>}

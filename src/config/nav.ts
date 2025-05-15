@@ -1,8 +1,6 @@
 
 import React from 'react';
-import Image from 'next/image';
-// cn utility is not strictly needed here for AppLogoIcon's div anymore
-// import { cn } from '@/lib/utils';
+import NextImage from 'next/image'; // Aliased import
 import {
   LayoutDashboard,
   Mic,
@@ -28,16 +26,13 @@ export interface NavItem {
 }
 
 // Define AppLogoIcon as a React component
-// It now directly returns the Image component.
-// The parent component (app-sidebar.tsx, mobile-header.tsx) is responsible for the wrapper div and sizing.
-export const AppLogoIcon: React.FC<{ className?: string }> = ({ className }) => {
+export const AppLogoIcon = () => {
   return (
-    <Image
-      src={"/logo/logo.png"} // Path to your logo in public/logo/ - explicitly a JSX expression
+    <NextImage // Using aliased import
+      src={"/logo/logo.png"}
       alt="PrabhAI Logo"
       width={32} // Added explicit width
       height={32} // Added explicit height
-      className={className} // Apply any passed className to the Image itself
     />
   );
 };
@@ -107,3 +102,4 @@ export const footerNav: NavItem[] = [
     icon: Settings,
   },
 ];
+
