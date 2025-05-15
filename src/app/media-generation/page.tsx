@@ -94,7 +94,7 @@ export default function MediaGenerationPage() {
             Prabh's Creative {mediaType === 'image' ? 'Image Studio' : 'Video Lab (Mock)'}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Tell Prabh what {mediaType} you envision. Powered by Genkit & Gemini (Images).
+            Tell Prabh what {mediaType} you envision.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
