@@ -1,3 +1,4 @@
+
 import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
@@ -10,7 +11,8 @@ import {
   Blocks,
   Settings,
   BotMessageSquare,
-  MessageSquare // Added for new chat page
+  MessageSquare, // Added for new chat page
+  Library // Added for Deep Research
 } from 'lucide-react';
 
 export interface NavItem {
@@ -28,7 +30,7 @@ export const mainNav: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Prabh Chat', // New Chat Page
+    title: 'Prabh Chat', 
     href: '/prabh-chat',
     icon: MessageSquare,
   },
@@ -46,6 +48,11 @@ export const mainNav: NavItem[] = [
     title: 'Real-Time Knowledge',
     href: '/real-time-knowledge',
     icon: Newspaper,
+  },
+  {
+    title: 'Deep Research', // New Page
+    href: '/deep-research',
+    icon: Library,
   },
   {
     title: 'Media Generation',
@@ -74,7 +81,6 @@ export const footerNav: NavItem[] = [
     title: 'Settings',
     href: '/settings',
     icon: Settings,
-    // disabled: true, // Settings page is now active
   },
 ];
 
