@@ -5,18 +5,16 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Send, Volume2, StopCircle, Loader2 } from "lucide-react";
+import { Mic, Send, Volume2, StopCircle, Loader2, Phone, PhoneOff } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { generatePersonalizedResponse, type GeneratePersonalizedResponseInput, type GeneratePersonalizedResponseOutput } from '@/ai/flows/generate-personalized-response';
 import { generateSpeech } from '@/services/tts-service';
 import { useToast } from "@/hooks/use-toast";
 
-// For STT - Check if window is defined for SpeechRecognition
 const SpeechRecognitionAPI =
   typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
 let recognitionInstance: SpeechRecognition | null = null;
 
-// Initialize recognitionInstance only on the client-side after SpeechRecognitionAPI is confirmed
 if (typeof window !== 'undefined' && SpeechRecognitionAPI) {
   recognitionInstance = new SpeechRecognitionAPI();
   recognitionInstance.continuous = false;
@@ -25,14 +23,17 @@ if (typeof window !== 'undefined' && SpeechRecognitionAPI) {
   recognitionInstance.maxAlternatives = 1;
 }
 
+type CallState = 'idle' | 'active';
+
 export default function VoiceInteractionPage() {
+  const [callState, setCallState] = useState<CallState>('idle');
   const [isRecording, setIsRecording] = useState(false);
   const [transcribedText, setTranscribedText] = useState("");
   const [aiResponse, setAiResponse] = useState("");
   const [isLoadingAiResponse, setIsLoadingAiResponse] = useState(false);
   const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [currentPersona, setCurrentPersona] = useState("Friend"); // Default persona
+  const [currentPersona, setCurrentPersona] = useState("Friend");
   const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
@@ -40,8 +41,7 @@ export default function VoiceInteractionPage() {
   const previousIsRecording = useRef(false);
 
   useEffect(() => {
-    setClientReady(true); // Indicate client has mounted and browser APIs can be checked
-
+    setClientReady(true);
     const savedPersonaId = localStorage.getItem('selectedPersonaId');
     const customName = localStorage.getItem('customPersonaName');
     if (savedPersonaId) {
@@ -75,7 +75,6 @@ export default function VoiceInteractionPage() {
     }
   }, [currentAudioUrl, toast]);
 
-
   const handleSendText = useCallback(async () => {
     if (!transcribedText.trim()) {
       toast({
@@ -86,9 +85,10 @@ export default function VoiceInteractionPage() {
     }
     setIsLoadingAiResponse(true);
     setAiResponse("");
-    setCurrentAudioUrl(null); // Reset audio URL
+    setCurrentAudioUrl(null);
     if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = ""; // Clear src to avoid re-playing old audio
     }
     
     try {
@@ -129,8 +129,7 @@ export default function VoiceInteractionPage() {
       setIsLoadingAiResponse(false);
       setIsLoadingTts(false);
     }
-  }, [transcribedText, currentPersona, toast, setIsLoadingAiResponse, setAiResponse, setCurrentAudioUrl]);
-
+  }, [transcribedText, currentPersona, toast]);
 
   useEffect(() => {
     if (!clientReady || !recognitionInstance) return;
@@ -169,20 +168,19 @@ export default function VoiceInteractionPage() {
         recognitionInstance.onresult = null;
         recognitionInstance.onerror = null;
         recognitionInstance.onend = null;
-        if (isRecording) { 
+        if (isRecording && callState === 'active') { 
             recognitionInstance.stop();
         }
       }
     };
-  }, [clientReady, toast, isRecording]); 
+  }, [clientReady, toast, isRecording, callState]); 
 
   useEffect(() => {
-    if (previousIsRecording.current && !isRecording && transcribedText.trim()) {
+    if (callState === 'active' && previousIsRecording.current && !isRecording && transcribedText.trim()) {
       handleSendText();
     }
     previousIsRecording.current = isRecording;
-  }, [isRecording, transcribedText, handleSendText]);
-
+  }, [isRecording, transcribedText, handleSendText, callState]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -207,11 +205,11 @@ export default function VoiceInteractionPage() {
   }, [isLoadingAiResponse, isLoadingTts]);
 
   const handleToggleRecording = () => {
-    if (!clientReady || !recognitionInstance) {
+    if (!clientReady || !recognitionInstance || callState !== 'active') {
        toast({
         variant: "destructive",
         title: "Mic Check Failed!",
-        description: "Speech recognition is not supported or enabled in your browser, Prabh.",
+        description: "Speech recognition is not supported, enabled, or call is not active, Prabh.",
       });
       return;
     }
@@ -221,9 +219,10 @@ export default function VoiceInteractionPage() {
     } else {
       setTranscribedText(""); 
       setAiResponse(""); 
-      setCurrentAudioUrl(null); // Reset audio URL
+      setCurrentAudioUrl(null);
       if (audioRef.current) {
         audioRef.current.pause();
+        audioRef.current.src = "";
       }
       try {
         recognitionInstance.start();
@@ -240,91 +239,158 @@ export default function VoiceInteractionPage() {
     }
   };
   
-  const canRecord = clientReady && !!SpeechRecognitionAPI; 
+  const handleStartCall = () => {
+    setTranscribedText("");
+    setAiResponse("");
+    setCurrentAudioUrl(null);
+    if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+    }
+    setCallState('active');
+    // Optionally, trigger an initial greeting from Prabh here
+    // e.g., setTranscribedText("Hello Prabh, start call."); handleSendText();
+    // For now, let's keep it simple: user initiates first speech after call starts.
+     toast({
+        title: "Call Started!",
+        description: "You're now connected to Prabh. Tap the mic to speak.",
+      });
+  };
+
+  const handleEndCall = () => {
+    if (isRecording && recognitionInstance) {
+      recognitionInstance.stop();
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+    }
+    setIsRecording(false);
+    setIsLoadingAiResponse(false);
+    setIsLoadingTts(false);
+    setCurrentAudioUrl(null);
+    setTranscribedText("");
+    setAiResponse("");
+    setCallState('idle');
+    toast({
+        title: "Call Ended",
+        description: "Your conversation with Prabh has ended.",
+      });
+  };
+  
+  const canRecord = clientReady && !!SpeechRecognitionAPI && callState === 'active'; 
   const recordButtonDisabled = isLoadingAiResponse || isLoadingTts || (!isRecording && !canRecord);
   const recordButtonText = isRecording 
     ? "Prabh is Listening..." 
-    : (canRecord ? "Tap to Speak" : "Voice Not Supported");
+    : (canRecord ? "Tap to Speak" : (callState === 'active' ? "Voice Not Supported" : "Start Call to Speak"));
 
   return (
-    <div className="container mx-auto py-8">
-      <Card className="max-w-2xl mx-auto shadow-xl bg-card">
+    <div className="container mx-auto py-8 flex flex-col flex-1 items-center justify-center min-h-[calc(100vh-12rem)]">
+      <Card className="w-full max-w-2xl shadow-xl bg-card flex flex-col flex-1">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-            <Mic className="h-7 w-7" />
-            Talk to Prabh
+            <Phone className="h-7 w-7" />
+            Call Prabh
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Speak or type, and Prabh will respond as your <span className="font-semibold text-accent">{currentPersona}</span>.
+            {callState === 'idle' 
+              ? "Ready to talk? Start a real-time voice call with Prabh."
+              : `Talking with Prabh as your ${currentPersona}.`}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-col items-center gap-4">
+
+        {callState === 'idle' && (
+          <CardContent className="flex-1 flex flex-col items-center justify-center space-y-6 p-8">
+            <Phone className="h-24 w-24 text-primary opacity-50" />
             <Button
-              onClick={handleToggleRecording}
+              onClick={handleStartCall}
               size="lg"
-              variant={isRecording ? "destructive" : "default"}
-              className="w-full max-w-xs rounded-full text-lg py-6 shadow-md hover:shadow-lg transition-shadow disabled:opacity-70"
-              aria-label={isRecording ? "Stop recording" : "Start recording"}
-              disabled={recordButtonDisabled}
+              className="w-full max-w-xs rounded-full text-xl py-8 shadow-lg hover:shadow-2xl transition-shadow bg-accent hover:bg-accent/90 text-accent-foreground"
             >
-              {isRecording ? (
-                <StopCircle className="mr-2 h-6 w-6 animate-pulse" />
-              ) : (
-                <Mic className="mr-2 h-6 w-6" />
-              )}
-              {recordButtonText}
+              <Phone className="mr-3 h-7 w-7" />
+              Start Call with Prabh
             </Button>
-            {isRecording && clientReady && ( 
-              <p className="text-sm text-accent animate-pulse">Listening intently...</p>
-            )}
-          </div>
+             <p className="text-sm text-muted-foreground text-center">
+              Click the button above to begin a live voice conversation.
+            </p>
+          </CardContent>
+        )}
 
-          <Textarea
-            placeholder="Prabh will write down what you say, or you can type here..."
-            value={transcribedText}
-            onChange={(e) => setTranscribedText(e.target.value)}
-            rows={3}
-            className="text-base bg-background text-foreground placeholder:text-muted-foreground"
-            disabled={isRecording || isLoadingAiResponse || isLoadingTts}
-          />
-          
-          <Button 
-            onClick={handleSendText} 
-            disabled={isLoadingAiResponse || isLoadingTts || !transcribedText.trim()} 
-            className="w-full text-lg py-3"
-            aria-label="Send message to PrabhAI"
-          >
-            {(isLoadingAiResponse || isLoadingTts) ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="mr-2 h-5 w-5" />
-            )}
-            {isLoadingAiResponse ? "Prabh is Thinking..." : (isLoadingTts ? "Prabh is Speaking..." : "Send to Prabh")}
-          </Button>
+        {callState === 'active' && (
+          <>
+            <CardContent className="flex-1 space-y-6 p-4 overflow-y-auto">
+              <div className="flex flex-col items-center gap-4">
+                <Button
+                  onClick={handleToggleRecording}
+                  size="lg"
+                  variant={isRecording ? "destructive" : "default"}
+                  className="w-full max-w-xs rounded-full text-lg py-6 shadow-md hover:shadow-lg transition-shadow disabled:opacity-70"
+                  aria-label={isRecording ? "Stop recording" : "Start recording"}
+                  disabled={recordButtonDisabled}
+                >
+                  {isRecording ? (
+                    <StopCircle className="mr-2 h-6 w-6 animate-pulse" />
+                  ) : (
+                    <Mic className="mr-2 h-6 w-6" />
+                  )}
+                  {recordButtonText}
+                </Button>
+                {isRecording && clientReady && ( 
+                  <p className="text-sm text-accent animate-pulse">Listening intently...</p>
+                )}
+              </div>
 
-          {(isLoadingAiResponse || isLoadingTts) && <Progress value={progress} className="w-full h-2" />}
+              <Textarea
+                placeholder="Prabh will write down what you say..."
+                value={transcribedText}
+                readOnly // User input is primarily via voice in call mode
+                rows={3}
+                className="text-base bg-background/30 text-foreground placeholder:text-muted-foreground border-border/50"
+              />
+              
+              {(isLoadingAiResponse || isLoadingTts) && <Progress value={progress} className="w-full h-2 mt-2" />}
 
-          {aiResponse && !isLoadingAiResponse && (
-            <Card className="bg-muted/30">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2 text-accent">
-                  <Volume2 className="h-5 w-5" />
-                  Prabh Says:
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-foreground whitespace-pre-wrap">{aiResponse}</p>
-                {currentAudioUrl && <audio ref={audioRef} className="w-full mt-4" controls />}
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-        <CardFooter>
-          <p className="text-xs text-muted-foreground text-center w-full">
-            Prabh uses browser STT & ElevenLabs TTS. Ensure your mic is enabled!
-          </p>
-        </CardFooter>
+              {aiResponse && !isLoadingAiResponse && (
+                <Card className="bg-muted/30 mt-4">
+                  <CardHeader className="pb-2 pt-4">
+                    <CardTitle className="text-md flex items-center gap-2 text-accent">
+                      <Volume2 className="h-5 w-5" />
+                      Prabh Says:
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pb-4">
+                    <p className="text-foreground whitespace-pre-wrap">{aiResponse}</p>
+                    {currentAudioUrl && <audio ref={audioRef} className="w-full mt-4" controls />}
+                  </CardContent>
+                </Card>
+              )}
+               {!aiResponse && !isLoadingAiResponse && !isLoadingTts && transcribedText && (
+                 <p className="text-sm text-muted-foreground text-center py-4">Prabh is processing your message...</p>
+               )}
+               {!aiResponse && !isLoadingAiResponse && !isLoadingTts && !transcribedText && (
+                 <p className="text-sm text-muted-foreground text-center py-4">Tap the mic to speak to Prabh.</p>
+               )}
+            </CardContent>
+            <CardFooter className="p-4 border-t border-border">
+              <Button 
+                onClick={handleEndCall} 
+                variant="destructive" 
+                className="w-full text-lg py-3"
+                aria-label="End call with PrabhAI"
+              >
+                <PhoneOff className="mr-2 h-5 w-5" />
+                End Call
+              </Button>
+            </CardFooter>
+          </>
+        )}
+         {callState !== 'active' && (
+          <CardFooter className="p-4 border-t border-border">
+             <p className="text-xs text-muted-foreground text-center w-full">
+                Prabh uses browser STT & ElevenLabs TTS. Ensure your mic is enabled!
+            </p>
+          </CardFooter>
+         )}
       </Card>
     </div>
   );
