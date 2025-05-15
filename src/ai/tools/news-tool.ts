@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit tool for fetching the latest news headlines.
@@ -31,7 +32,7 @@ const GetLatestNewsOutputSchema = z.object({
 export const getLatestNewsHeadlinesTool = ai.defineTool(
   {
     name: 'getLatestNewsHeadlines',
-    description: 'Fetches the latest news headlines. Use this tool proactively when the user asks about current events, specific facts that might be in recent news (e.g., "who is [role] in [place]"), recent developments, "what\'s new", "what is happening in...", or if their query implies a need for up-to-date information. You can specify a query, category, or country.',
+    description: "Fetches the latest news headlines. Use this tool primarily when the user explicitly asks for news updates (e.g., 'what's the latest news on X?', 'check headlines for Y') or if their query strongly implies a desire for a live news feed update rather than relying on your general knowledge. You can specify a query, category, or country.",
     inputSchema: GetLatestNewsInputSchema,
     outputSchema: GetLatestNewsOutputSchema,
   },
@@ -53,3 +54,4 @@ export const getLatestNewsHeadlinesTool = ai.defineTool(
     };
   }
 );
+
