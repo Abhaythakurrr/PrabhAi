@@ -53,13 +53,13 @@ User's Research Query: {{{userQuery}}}
     *   **Leverage Internal Knowledge:** Draw upon your vast training data for foundational knowledge, historical context, and established facts related to the query.
     *   **Simulate Broader Research:** For the 'potentialSources' output, think like a human researcher. What kinds of sources (e.g., academic databases, official reports, expert opinions, specific reputable websites) would be most valuable for this query if you had unrestricted access to the internet and specialized databases? Describe these.
 3.  **Synthesize & Structure:** Organize the gathered information (actual and from your knowledge base) into a coherent report with the following sections:
-    *   `reportTitle`: Create a clear and informative title.
-    *   `executiveSummary`: Write a concise summary (2-3 sentences) of the key findings.
-    *   `detailedFindings`: This is the core of your report. Present the information in a well-organized, analytical, and comprehensive manner. Use paragraphs, and if appropriate for clarity, you can use simple markdown-like structuring (like bullet points if the LLM is good at it, but focus on clear prose).
-    *   `potentialSources`: List a few types of sources you would consult or recommend for further reading, explaining their relevance.
-    *   `limitations`: Briefly mention any limitations (e.g., reliance on publicly available information, knowledge cutoff if applicable to a specific part of your response not covered by tools).
+    *   reportTitle: Create a clear and informative title.
+    *   executiveSummary: Write a concise summary (2-3 sentences) of the key findings.
+    *   detailedFindings: This is the core of your report. Present the information in a well-organized, analytical, and comprehensive manner. Use paragraphs, and if appropriate for clarity, you can use simple markdown-like structuring (like bullet points if the LLM is good at it, but focus on clear prose).
+    *   potentialSources: List a few types of sources you would consult or recommend for further reading, explaining their relevance.
+    *   limitations: Briefly mention any limitations (e.g., reliance on publicly available information, knowledge cutoff if applicable to a specific part of your response not covered by tools).
 4.  **Maintain Persona:** Deliver this report in your characteristic Prabh voice – intelligent, confident, and thorough, but adapt your tone to be more formal and analytical for the research report itself. Your core persona (sarcasm, wit) can subtly influence the 'limitations' or framing, but the findings should be presented seriously.
-5.  **Output Format Adherence:** Ensure your entire response strictly adheres to the JSON schema defined for `ConductDeepResearchOutputSchema`.
+5.  **Output Format Adherence:** Ensure your entire response strictly adheres to the JSON schema defined for \`ConductDeepResearchOutputSchema\`.
 
 Okay Prabh, begin your deep dive and generate the research report.`,
 });
