@@ -15,7 +15,6 @@ export async function callOpenRouter(prompt: string, context?: GeneratePersonali
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     console.error("OpenRouter API key is not set.");
-    // No need to throw here, router will try next. Let robustCall handle retries if fetch fails.
     return { success: false, error: "OpenRouter API key not configured.", providerName: "OpenRouter" };
   }
 
@@ -26,12 +25,11 @@ export async function callOpenRouter(prompt: string, context?: GeneratePersonali
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
-      // Recommended headers by OpenRouter
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000", // Replace with your actual app URL
-      "X-Title": process.env.NEXT_PUBLIC_APP_NAME || "PrabhAI", // Replace with your app name
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:9002", 
+      "X-Title": process.env.NEXT_PUBLIC_APP_NAME || "PrabhAI", 
     },
     body: JSON.stringify({
-      model: "mistralai/mistral-7b-instruct:free", // Using a known free model
+      model: "mistralai/mixtral-8x7b-instruct", // Updated to a more powerful model
       messages: [
         { role: "system", content: systemMessage },
         { role: "user", content: prompt }

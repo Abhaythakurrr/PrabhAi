@@ -5,7 +5,8 @@
 import { robustCall } from '@/lib/robust-call';
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-const ELEVENLABS_VOICE_ID = 'ZpjnZHRyF5OHsFJDCnJ9'; // Default female voice as per request
+// Changed to a common default voice for testing. User might need to provide their preferred valid voice ID.
+const ELEVENLABS_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel (Common Voice)
 const ELEVENLABS_API_BASE_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 interface ElevenLabsErrorResponse {

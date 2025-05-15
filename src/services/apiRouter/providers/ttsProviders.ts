@@ -1,16 +1,10 @@
 
 'use server';
 
-import { robustCall } from '@/lib/robust-call'; // Corrected path
+import { robustCall } from '@/lib/robust-call'; 
 
-export interface TTSProviderResponse {
-  success: boolean;
-  audioUrl?: string;
-  error?: string;
-  providerName: string;
-}
-
-const ELEVENLABS_VOICE_ID = 'ZpjnZHRyF5OHsFJDCnJ9'; // Default female voice
+// Changed to a common default voice for testing. User might need to provide their preferred valid voice ID.
+const ELEVENLABS_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel (Common Voice)
 const ELEVENLABS_API_BASE_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 interface ElevenLabsErrorResponse {
@@ -18,6 +12,13 @@ interface ElevenLabsErrorResponse {
     status: string;
     message: string;
   } | string;
+}
+
+export interface TTSProviderResponse {
+  success: boolean;
+  audioUrl?: string;
+  error?: string;
+  providerName: string;
 }
 
 async function _callElevenLabsInternal(
@@ -90,14 +91,6 @@ export async function callElevenLabs(text: string): Promise<TTSProviderResponse>
     // This catch is for errors from robustCall if all internal retries for _callElevenLabsInternal fail
     console.error(`ElevenLabs call failed after retries: ${error.message}`);
     // For the main router, the provider function itself should throw if it cannot fulfill.
-    // However, since robustCall is *inside* this provider, we re-throw so the main router's robustCall can catch it.
-    // Or, we can decide that callElevenLabs itself returns a ProviderResponse. For consistency with robustCall handling in the main router,
-    // this function should throw if its own robustCall fails.
-    // Let's adjust: if robustCall fails, it throws. This function should then be wrapped by robustCall in the main router.
-    // For this iteration, I'll keep robustCall internal to this provider for TTS.
-    // If robustCall for _callElevenLabsInternal fails, it throws an error.
-    // The router's robustCall around callElevenLabs will catch this.
-    // The console.error above is sufficient. Let the error propagate to the main router's robustCall.
     throw error; // Re-throw for the main router's robustCall
   }
 }
