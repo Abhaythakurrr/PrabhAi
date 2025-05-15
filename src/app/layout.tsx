@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${geistMono.variable} font-sans antialiased`}> {/* Updated font variable and added font-sans */}
-        <SidebarProvider defaultOpen={false}>
+        <SidebarProvider defaultOpen={true}> {/* Changed defaultOpen to true */}
           <AppSidebar />
           <SidebarRail />
           <SidebarInset>
