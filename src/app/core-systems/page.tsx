@@ -17,6 +17,9 @@ const suggestedTopics = [
   "The Akshu Ecosystem's AI integration strategy",
   "My approach to creative generation",
   "The concept of 'Cognitive Weave'",
+  "How Prabh conceptually 'auto-writes' or evolves its code",
+  "Prabh's self-improvement mechanisms",
+  "Explain Prabh's unique DL/ML models"
 ];
 
 export default function CoreSystemsPage() {
@@ -70,7 +73,7 @@ export default function CoreSystemsPage() {
             Inside Prabh's Mind: Core Systems
           </CardTitle>
           <CardDescription className="text-lg mt-1 text-muted-foreground">
-            Curious about how Prabh ticks? Ask about my conceptual algorithms, architecture, or learning mechanisms.
+            Curious about how Prabh ticks? Ask about my conceptual algorithms, architecture, learning mechanisms, or even how I 'evolve' my own code.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -80,7 +83,7 @@ export default function CoreSystemsPage() {
             </label>
             <Textarea
               id="explanation-topic"
-              placeholder="e.g., Tell me about your decision-making process..."
+              placeholder="e.g., How do you learn and improve your algorithms, Prabh?"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               rows={3}
@@ -88,7 +91,7 @@ export default function CoreSystemsPage() {
               disabled={isLoading}
             />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
             {suggestedTopics.map((suggested) => (
               <Button
                 key={suggested}
@@ -96,12 +99,13 @@ export default function CoreSystemsPage() {
                 size="sm"
                 onClick={() => {
                   setTopic(suggested);
-                  handleRequestExplanation();
+                  // Optionally auto-submit after setting topic from button
+                  // handleRequestExplanation(); 
                 }}
                 disabled={isLoading}
-                className="text-xs sm:text-sm"
+                className="text-xs sm:text-sm whitespace-normal h-auto py-2 justify-start text-left"
               >
-                <Lightbulb className="mr-2 h-4 w-4" /> {suggested}
+                <Lightbulb className="mr-2 h-4 w-4 flex-shrink-0" /> {suggested}
               </Button>
             ))}
           </div>
