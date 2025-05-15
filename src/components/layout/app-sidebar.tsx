@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,7 +17,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { mainNav, footerNav, AppLogoIcon } from '@/config/nav';
+import { mainNav, footerNav, AppLogoIcon } from '@/config/nav'; // AppLogoIcon is now a component
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
@@ -36,7 +37,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <SidebarHeader className="flex items-center justify-between p-4">
         <Link href="/" className="flex items-center gap-2">
-          <AppLogoIcon className="h-8 w-8 text-primary" />
+          {/* Use AppLogoIcon component here */}
+          <AppLogoIcon className="h-8 w-8" />
           {open && <span className="text-xl font-semibold">PrabhAI</span>}
         </Link>
         <div className="md:hidden">
@@ -56,7 +58,12 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   className="justify-start"
                 >
                   <a>
-                    <item.icon className="h-5 w-5" />
+                    {/* Handle if icon is LucideIcon or React.FC */}
+                    {typeof item.icon === 'function' ? (
+                      <item.icon className="h-5 w-5" />
+                    ) : (
+                      <item.icon className="h-5 w-5" /> // Fallback if it's somehow not a function (LucideIcon)
+                    )}
                     <span>{item.title}</span>
                   </a>
                 </SidebarMenuButton>
@@ -79,7 +86,11 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   className="justify-start"
                 >
                   <a>
-                    <item.icon className="h-5 w-5" />
+                    {typeof item.icon === 'function' ? (
+                      <item.icon className="h-5 w-5" />
+                    ) : (
+                      <item.icon className="h-5 w-5" />
+                    )}
                     <span>{item.title}</span>
                    </a>
                 </SidebarMenuButton>
