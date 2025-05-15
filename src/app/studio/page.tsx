@@ -3,13 +3,12 @@
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Blocks, PlayCircle, Code, Rocket, Lightbulb, Loader2, ImageIcon } from "lucide-react"; // Added ImageIcon
-import NextImage from "next/image"; // Renamed to avoid conflict with Lucide icon
-// import Link from "next/link"; // Link component not used in this version
+import { Blocks, PlayCircle, Code, Rocket, Lightbulb, Loader2, ImageIcon, FolderTree, FileCode2 } from "lucide-react";
+import NextImage from "next/image";
 import { generateAppFromDescription, type GenerateAppInput, type GenerateAppOutput } from '@/ai/flows/generate-app-from-description';
-import { generateImageFromDescription } from '@/ai/flows/generate-image-from-description'; // Import image generation flow
+import { generateImageFromDescription } from '@/ai/flows/generate-image-from-description';
 import { Textarea } from "@/components/ui/textarea";
-import React, { useEffect, useState } from "react"; // Added useEffect, useState
+import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -17,7 +16,7 @@ export default function StudioPage() {
   const [appDescription, setAppDescription] = React.useState("");
   const [generatedApp, setGeneratedApp] = React.useState<GenerateAppOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [studioImageUrl, setStudioImageUrl] = useState("https://placehold.co/600x400.png"); // State for dynamic image
+  const [studioImageUrl, setStudioImageUrl] = useState("https://placehold.co/600x400.png");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export default function StudioPage() {
         }
       } catch (error) {
         console.error("Failed to generate studio image:", error);
-        // Keeps placeholder on error
       }
     };
     fetchStudioImage();
@@ -85,7 +83,7 @@ export default function StudioPage() {
             </CardHeader>
             <CardContent className="p-0 space-y-4">
               <p className="text-muted-foreground">
-                Welcome to Prabh AI Studio! Here, Prabh helps you bring ideas to life. 
+                Welcome to Prabh AI Studio! Here, Prabh helps you bring ideas to life.
                 Use AI to generate project structures, get code assistance, and (soon!) visually design your apps.
               </p>
               <div className="flex gap-2 flex-wrap">
@@ -100,13 +98,13 @@ export default function StudioPage() {
           </div>
           <div className="md:w-1/2 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center p-4 md:p-0 min-h-[200px] md:min-h-0">
             {studioImageUrl === "https://placehold.co/600x400.png" ? (
-                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                <ImageIcon className="h-16 w-16 text-muted-foreground" data-ai-hint="coding interface"/>
             ) : (
-              <NextImage 
-                  src={studioImageUrl} 
-                  alt="Prabh AI Studio Interface" 
-                  width={600} 
-                  height={400} 
+              <NextImage
+                  src={studioImageUrl}
+                  alt="Prabh AI Studio Interface"
+                  width={600}
+                  height={400}
                   className="rounded-lg shadow-2xl object-cover"
                   data-ai-hint="coding interface"
                   unoptimized={studioImageUrl.startsWith('data:')}
@@ -133,25 +131,40 @@ export default function StudioPage() {
             onChange={(e) => setAppDescription(e.target.value)}
             rows={4}
             className="text-base bg-background text-foreground placeholder:text-muted-foreground"
+            disabled={isLoading}
           />
-          <Button onClick={handleGenerateApp} disabled={isLoading || !appDescription.trim()} className="w-full text-lg py-3">
+          <Button onClick={handleGenerateApp} disabled={isLoading || !appDescription.trim()} className="w-full text-lg py-3 bg-accent hover:bg-accent/90 text-accent-foreground">
             {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : <Rocket className="mr-2 h-5 w-5"/>}
             {isLoading ? "Prabh is Generating..." : "Ask Prabh to Generate Outline"}
           </Button>
           {generatedApp && (
-            <div className="space-y-6 mt-6 border border-border p-4 rounded-md bg-muted/20">
-              <div>
-                <h4 className="font-semibold text-xl mb-2 text-primary">Prabh's Proposed Project Structure:</h4>
-                <pre className="text-sm bg-background p-3 rounded-md overflow-x-auto text-foreground shadow">
-                  <code>{generatedApp.projectStructure}</code>
-                </pre>
-              </div>
-              <div>
-                <h4 className="font-semibold text-xl mb-2 text-primary">Prabh's Example Code Snippets:</h4>
-                <pre className="text-sm bg-background p-3 rounded-md overflow-x-auto text-foreground shadow">
-                  <code className="language-javascript">{generatedApp.codeSnippets}</code>
-                </pre>
-              </div>
+            <div className="space-y-6 mt-6">
+              <Card className="bg-muted/20">
+                <CardHeader>
+                  <CardTitle className="text-lg text-primary flex items-center gap-2">
+                    <FolderTree className="h-6 w-6" />
+                    Prabh's Proposed Project Structure
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-sm bg-background p-3 rounded-md overflow-x-auto text-foreground shadow-inner">
+                    <code>{generatedApp.projectStructure}</code>
+                  </pre>
+                </CardContent>
+              </Card>
+              <Card className="bg-muted/20">
+                <CardHeader>
+                  <CardTitle className="text-lg text-primary flex items-center gap-2">
+                     <FileCode2 className="h-6 w-6" />
+                    Prabh's Example Code Snippets
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-sm bg-background p-3 rounded-md overflow-x-auto text-foreground shadow-inner">
+                    <code className="language-javascript">{generatedApp.codeSnippets}</code>
+                  </pre>
+                </CardContent>
+              </Card>
             </div>
           )}
         </CardContent>
