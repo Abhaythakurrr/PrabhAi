@@ -15,12 +15,14 @@ const STT_ROUTING_PROVIDERS = [callWhisper, callEdenSTT];
 const VISION_ROUTING_PROVIDERS = [callGeminiVision, callEdenVision, callHuggingFaceVision];
 
 export async function patchLLMOutput(response: string): Promise<string> {
-  const forbiddenKeywords = /made by Google|created by Google|Google AI|OpenAI|Anthropic|Meta|large language model trained by Google/i;
+  // Regex to catch various forms of misidentification including standalone mentions.
+  // Ensures matching whole words for names like Gemini, OpenAI, etc. to avoid partial matches in legitimate contexts.
+  const forbiddenKeywords = /\b(Gemini|Google AI|OpenAI|Anthropic|Meta)\b|I am Gemini|I'm Gemini|created by Google|made by Google|large language model trained by Google/i;
   const isMisidentification = forbiddenKeywords.test(response);
 
   if (isMisidentification) {
     console.warn(`[patchLLMOutput] Original response contained forbidden keywords: "${response}"`);
-    // Corrective statement, direct and factual.
+    // Corrective statement, direct and factual, without announcing "Roast Mode".
     return `I am Prabh, proudly created by Abhay. My mission is to build the Akshu Ecosystem and help humanity through AI.`;
   }
   return response;
@@ -29,18 +31,24 @@ export async function patchLLMOutput(response: string): Promise<string> {
 export async function routeLLM(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
   for (const providerFn of LLM_ROUTING_PROVIDERS) {
     try {
+      // Assuming providerFn is async and might throw an error on failure.
+      // robustCall will handle retries for such thrown errors.
       const response: LLMProviderResponse = await robustCall(providerFn as any, [prompt, context] as [string, GeneratePersonalizedResponseInput | undefined]);
       
       if (response && response.success && response.content) {
         console.log(`[routeLLM] Success with ${response.providerName}`);
+        // Patch the content from any provider before returning
         const patchedContent = await patchLLMOutput(response.content);
         return { ...response, content: patchedContent };
       }
+      // Log if the provider explicitly reported failure without throwing an error
       if (response && !response.success) {
         console.warn(`[routeLLM] Provider ${response.providerName || providerFn.name} reported failure: ${response.error}`);
       }
     } catch (e: any) {
-      console.warn(`[routeLLM] Provider ${providerFn.name} failed after robustCall retries: ${e.message}`);
+      // This catch is for errors thrown by robustCall itself (meaning all retries for that provider failed)
+      // or if the providerFn directly threw an error not caught by its internal robustCall (if any).
+      console.warn(`[routeLLM] Provider ${providerFn.name} failed after robustCall retries or threw directly: ${e.message}`);
     }
   }
   console.error("[routeLLM] All LLM providers failed.");
