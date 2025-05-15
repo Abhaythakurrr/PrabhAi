@@ -3,24 +3,26 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button"; // Using PrabhButton
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send, Bot, UserCircle, Loader2 } from "lucide-react";
+import { MessageSquare, Send, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { generatePersonalizedResponse, type GeneratePersonalizedResponseInput, type GeneratePersonalizedResponseOutput } from '@/ai/flows/generate-personalized-response';
 import { useToast } from "@/hooks/use-toast";
+import ChatBubble from '@/components/prabh_ui/ChatBubble'; // Import new ChatBubble
+import { PrabhButton } from '@/components/prabh_ui/PrabhButton'; // Import new PrabhButton
 
 interface ChatMessage {
   id: string;
   text: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'prabh'; // Changed 'ai' to 'prabh' for consistency with ChatBubble prop
   timestamp: Date;
 }
 
 interface StoredInteraction {
   id: string;
   timestamp: string;
-  type: 'user' | 'ai';
+  type: 'user' | 'ai'; // Keeping 'ai' here for potential backward compatibility with existing memory
   text: string;
   persona?: string;
 }
@@ -30,7 +32,6 @@ const TYPING_SPEED_MS_PER_CHUNK = 75;
 const MEMORY_KEY = 'prabhAiMemory';
 const INITIAL_GREETING_ID = "prabh-initial-greeting";
 const INITIAL_GREETING_TEXT = "Hi, I'm Prabh — an AI created by Abhay to power the Akshu Ecosystem. How can I help you today? ✨";
-
 
 export default function PrabhChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -49,19 +50,17 @@ export default function PrabhChatPage() {
   }, []);
 
   useEffect(() => {
-    // Add initial greeting if messages are empty
     if (messages.length === 0) {
       const greetingMessage: ChatMessage = {
         id: INITIAL_GREETING_ID,
         text: INITIAL_GREETING_TEXT,
-        sender: 'ai',
+        sender: 'prabh',
         timestamp: new Date()
       };
       setMessages([greetingMessage]);
       saveInteractionToMemory(greetingMessage, NEUTRAL_PERSONA_NAME);
     }
-  }, []); // Empty dependency array ensures this runs only once on mount
-
+  }, []); 
 
   useEffect(() => {
     scrollToBottom();
@@ -77,11 +76,10 @@ export default function PrabhChatPage() {
       const newInteraction: StoredInteraction = {
         id: message.id,
         timestamp: message.timestamp.toISOString(),
-        type: message.sender,
+        type: message.sender === 'prabh' ? 'ai' : 'user', // Map 'prabh' to 'ai' for storage
         text: message.text,
-        persona: message.sender === 'ai' ? persona || NEUTRAL_PERSONA_NAME : undefined,
+        persona: message.sender === 'prabh' ? persona || NEUTRAL_PERSONA_NAME : undefined,
       };
-      // Avoid duplicate initial greeting in memory if already exists
       if (message.id === INITIAL_GREETING_ID && currentMemory.some(m => m.id === INITIAL_GREETING_ID)) {
         return;
       }
@@ -111,7 +109,7 @@ export default function PrabhChatPage() {
   const handleSendMessage = async () => {
     if (!currentInput.trim()) return;
     const userMessageText = currentInput;
-    addUserMessage(userMessageText); // This already saves the user message
+    addUserMessage(userMessageText);
     setCurrentInput("");
     setIsLoading(true);
     
@@ -125,13 +123,13 @@ export default function PrabhChatPage() {
       const output: GeneratePersonalizedResponseOutput = await generatePersonalizedResponse(input);
       
       const aiFullResponse = output.response;
-      const aiMessageId = Date.now().toString() + "_ai";
+      const aiMessageId = Date.now().toString() + "_prabh"; // Changed suffix
       const aiMessageTimestamp = new Date();
 
       setMessages(prev => [...prev, { 
         id: aiMessageId, 
         text: "", 
-        sender: 'ai', 
+        sender: 'prabh', 
         timestamp: aiMessageTimestamp
       }]);
       setIsLoading(false); 
@@ -149,8 +147,7 @@ export default function PrabhChatPage() {
         scrollToBottom();
         await new Promise(resolve => setTimeout(resolve, TYPING_SPEED_MS_PER_CHUNK / (chunk.length > 5 ? 2 : 1) )); 
       }
-      // Save full AI message after typing animation
-      saveInteractionToMemory({ id: aiMessageId, text: aiFullResponse, sender: 'ai', timestamp: aiMessageTimestamp }, NEUTRAL_PERSONA_NAME);
+      saveInteractionToMemory({ id: aiMessageId, text: aiFullResponse, sender: 'prabh', timestamp: aiMessageTimestamp }, NEUTRAL_PERSONA_NAME);
 
     } catch (error: any) {
       setIsLoading(false);
@@ -160,9 +157,9 @@ export default function PrabhChatPage() {
         ? "Prabh's feeling a bit overwhelmed and couldn't connect to any thought streams. Maybe try again in a moment?"
         : "Prabh's feeling a bit quiet right now. Try again in a moment?";
       const errorMessage: ChatMessage = { 
-        id: Date.now().toString() + '_ai_error', 
+        id: Date.now().toString() + '_prabh_error', // Changed suffix
         text: errorMessageText, 
-        sender: 'ai', 
+        sender: 'prabh', 
         timestamp: errorTimestamp
       };
       setMessages(prev => [...prev, errorMessage]);
@@ -177,43 +174,42 @@ export default function PrabhChatPage() {
 
   return (
     <div className="container mx-auto py-8 flex flex-col flex-1">
-      <Card className="shadow-xl flex-1 flex flex-col bg-card">
+      <Card className="shadow-card dark:shadow-dark_card flex-1 flex flex-col bg-prabh-surface dark:bg-dark_prabh-surface text-prabh-text dark:text-dark_prabh-text">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center gap-2 text-primary">
+          <CardTitle className="text-2xl flex items-center gap-2 text-prabh-primary dark:text-dark_prabh-primary">
             <MessageSquare className="h-7 w-7" />
             Chat with Prabh
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Interact with Prabh in a standard, helpful mode. Current Persona: <span className="font-semibold text-accent">{NEUTRAL_PERSONA_NAME}</span>
+          <CardDescription className="text-prabh-muted dark:text-dark_prabh-muted">
+            Interact with Prabh in a standard, helpful mode. Current Persona: <span className="font-semibold text-prabh-accent dark:text-dark_prabh-accent">{NEUTRAL_PERSONA_NAME}</span>
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
+            <div className="space-y-2"> {/* Reduced space between bubbles */}
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : ''}`}>
-                  {msg.sender === 'ai' && <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />}
-                  <div className={`max-w-[75%] p-3 rounded-xl shadow-md ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-foreground border border-border'}`}>
-                    <p className="text-sm whitespace-pre-wrap">{msg.text || (msg.sender === 'ai' ? "..." : "")}</p>
-                     <p className="text-xs opacity-70 mt-1 text-right">{msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                  {msg.sender === 'user' && <UserCircle className="h-8 w-8 text-secondary self-start flex-shrink-0" />}
-                </div>
+                <ChatBubble 
+                  key={msg.id} 
+                  from={msg.sender} 
+                  text={msg.text || (msg.sender === 'prabh' ? "..." : "")}
+                  timestamp={msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                />
               ))}
               {isLoading && messages.length > 0 && messages[messages.length-1].sender === 'user' && ( 
-                <div className="flex items-end gap-2">
-                  <Bot className="h-8 w-8 text-primary self-start flex-shrink-0" />
-                  <div className="max-w-[70%] p-3 rounded-xl bg-muted/30 border border-border">
-                    <p className="text-sm flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-accent"/> Prabh is thinking...
-                    </p>
+                <div className="flex justify-start mb-3">
+                   <div className="flex items-end gap-2 max-w-[80%]">
+                    <div className="px-4 py-3 rounded-xl text-sm font-body shadow-card bg-prabh-surface text-prabh-text border border-prabh-secondary dark:bg-dark_prabh-surface dark:text-dark_prabh-text dark:border-dark_prabh-secondary rounded-tl-none">
+                        <p className="text-sm flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-prabh-primary dark:text-dark_prabh-primary"/> Prabh is thinking...
+                        </p>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </ScrollArea>
         </CardContent>
-        <CardFooter className="p-4 border-t border-border">
+        <CardFooter className="p-4 border-t border-prabh-primary/20 dark:border-dark_prabh-primary/20">
           <div className="flex w-full items-center gap-2">
             <Input
               type="text"
@@ -222,19 +218,18 @@ export default function PrabhChatPage() {
               onChange={(e) => setCurrentInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
               disabled={isLoading}
-              className="flex-1 bg-background text-foreground placeholder:text-muted-foreground"
+              className="flex-1 bg-prabh-background dark:bg-dark_prabh-background text-prabh-text dark:text-dark_prabh-text placeholder:text-prabh-muted dark:placeholder:text-dark_prabh-muted border-prabh-secondary/50 dark:border-dark_prabh-secondary/50 focus:border-prabh-primary dark:focus:border-dark_prabh-primary focus:ring-prabh-primary dark:focus:ring-dark_prabh-primary"
               aria-label="Chat input"
             />
-            <Button onClick={handleSendMessage} disabled={isLoading || !currentInput.trim()} aria-label="Send message" className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Send className="h-5 w-5" />
-            </Button>
+            <PrabhButton onClick={handleSendMessage} disabled={isLoading || !currentInput.trim()} aria-label="Send message">
+              <Send className="h-5 w-5 mr-0 md:mr-2" /> <span className="hidden md:inline">Send</span>
+            </PrabhButton>
           </div>
         </CardFooter>
       </Card>
-       <p className="text-xs text-muted-foreground text-center w-full mt-2">
+       <p className="text-xs text-prabh-muted dark:text-dark_prabh-muted text-center w-full mt-2">
             Prabh is always learning. Responses are AI-generated.
         </p>
     </div>
   );
 }
-

@@ -1,27 +1,16 @@
 
 import type { Metadata } from 'next';
-import { Poppins } from 'next/font/google'; // Changed from Inter
-import { Geist_Mono } from 'next/font/google';
+// Removed Geist_Sans and direct Poppins import, will rely on globals.css and tailwind.config.ts
 import './globals.css';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { MobileHeader } from '@/components/layout/mobile-header';
 import { Toaster } from "@/components/ui/toaster";
-
-const poppins = Poppins({ // Changed from inter
-  variable: '--font-poppins', // Changed variable name
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'] // Added weights for Poppins
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+import { ThemeToggle } from '@/components/prabh_ui/ThemeToggle'; // Placeholder for ThemeToggle placement
 
 export const metadata: Metadata = {
   title: 'PrabhAI',
-  description: 'Your Personalized AI Companion and Creator.',
+  description: 'Your Personalized AI Companion and Creator, by Abhay for Akshu Ecosystem.',
 };
 
 export default function RootLayout({
@@ -31,12 +20,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${poppins.variable} ${geistMono.variable} font-sans antialiased`}> {/* Updated font variable and added font-sans */}
-        <SidebarProvider defaultOpen={true}> {/* Changed defaultOpen to true */}
+      {/* font-body will be applied through globals.css and tailwind config */}
+      <body className="font-body antialiased"> {/* Apply font-body from Tailwind config */}
+        <SidebarProvider defaultOpen={true}>
           <AppSidebar />
           <SidebarRail />
           <SidebarInset>
             <MobileHeader />
+            {/* Example placement for ThemeToggle, adjust as needed */}
+            {/* <div className="absolute top-4 right-4 z-50 hidden md:block">
+              <ThemeToggle />
+            </div> */}
             <div className="flex-1 p-4 sm:p-6">
               {children}
             </div>
