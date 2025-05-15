@@ -1,6 +1,5 @@
 
-import React from 'react';
-import NextImage from 'next/image'; // Aliased import
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   Mic,
@@ -15,7 +14,7 @@ import {
   Library,
   Cpu
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { AppLogoIcon } from '@/components/layout/app-logo-icon'; // Updated import path
 
 export interface NavItem {
   title: string;
@@ -24,18 +23,6 @@ export interface NavItem {
   label?: string;
   disabled?: boolean;
 }
-
-// Define AppLogoIcon as a React component
-export const AppLogoIcon = () => {
-  return (
-    <NextImage // Using aliased import
-      src={"/logo/logo.png"}
-      alt="PrabhAI Logo"
-      width={32} // Added explicit width
-      height={32} // Added explicit height
-    />
-  );
-};
 
 export const mainNav: NavItem[] = [
   {
@@ -102,4 +89,3 @@ export const footerNav: NavItem[] = [
     icon: Settings,
   },
 ];
-

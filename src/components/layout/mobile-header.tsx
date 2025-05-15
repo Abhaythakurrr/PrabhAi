@@ -2,7 +2,7 @@
 'use client';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { AppLogoIcon } from '@/config/nav'; // AppLogoIcon is now a component
+import { AppLogoIcon } from './app-logo-icon'; // Updated import path
 import Link from 'next/link';
 
 export function MobileHeader() {

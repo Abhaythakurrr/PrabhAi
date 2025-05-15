@@ -17,7 +17,8 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { mainNav, footerNav, AppLogoIcon } from '@/config/nav'; // AppLogoIcon is now a component
+import { mainNav, footerNav } from '@/config/nav'; 
+import { AppLogoIcon } from './app-logo-icon'; // Updated import path
 // import { Button } from '@/components/ui/button'; // Not used
 import { Separator } from '@/components/ui/separator';
 
