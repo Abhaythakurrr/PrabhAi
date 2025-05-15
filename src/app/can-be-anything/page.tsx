@@ -31,7 +31,7 @@ const initialPersonas = ["Friend", "Mentor", "Sarcastic Robot", "Shakespearean P
 const TYPING_SPEED_MS_PER_CHUNK = 75;
 const MEMORY_KEY = 'prabhAiMemory'; // Shared memory key
 const INITIAL_GREETING_ID = "prabh-cba-initial-greeting";
-const INITIAL_GREETING_TEXT = "Hi, I'm Prabh! Here I can be anything. Let's see who I become next... 😉";
+const INITIAL_GREETING_TEXT = "Hi, I'm Prabh! Here I can be anything. Let's see who I become next... 😉 What's on your mind?";
 
 
 export default function CanBeAnythingPage() {

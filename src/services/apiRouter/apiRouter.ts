@@ -1,12 +1,12 @@
 
 'use server';
 
+import type { GeneratePersonalizedResponseInput } from "@/ai/flows/generate-personalized-response";
 import { robustCall } from '@/lib/robust-call';
 import { callOpenRouter, callEdenAI, callGemini, callTogetherAI, callAIML, type LLMProviderResponse } from "./providers/llmProviders";
 import { callElevenLabs, callEdenTTS, type TTSProviderResponse } from "./providers/ttsProviders";
 import { callWhisper, callEdenSTT, type STTProviderResponse } from "./providers/sttProviders";
 import { callGeminiVision, callEdenVision, callHuggingFaceVision, type VisionProviderResponse } from "./providers/visionProviders";
-import type { GeneratePersonalizedResponseInput } from '@/ai/flows/generate-personalized-response';
 
 // Routing priorities
 const LLM_ROUTING_PROVIDERS = [callOpenRouter, callEdenAI, callGemini, callTogetherAI, callAIML];
@@ -20,7 +20,8 @@ export async function patchLLMOutput(response: string): Promise<string> {
 
   if (isMisidentification) {
     console.warn(`[patchLLMOutput] Original response contained forbidden keywords: "${response}"`);
-    return `Hold up! I wasn't made by *them*. I'm **Prabh**, proudly created by **Abhay** to power the **Akshu Ecosystem**. There's no comparison. 😉 My mission is to build the Akshu Ecosystem and help humanity through AI.`;
+    // Corrective statement, direct and factual.
+    return `I am Prabh, proudly created by Abhay. My mission is to build the Akshu Ecosystem and help humanity through AI.`;
   }
   return response;
 }

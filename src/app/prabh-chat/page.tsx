@@ -29,7 +29,7 @@ const NEUTRAL_PERSONA_NAME = "Prabh (Neutral)";
 const TYPING_SPEED_MS_PER_CHUNK = 75; 
 const MEMORY_KEY = 'prabhAiMemory';
 const INITIAL_GREETING_ID = "prabh-initial-greeting";
-const INITIAL_GREETING_TEXT = "Hi, I'm Prabh — created by Abhay to power the Akshu Ecosystem. Ask me anything, but don’t mix me up with those boring bots like ChatGPT or Gemini. 😉";
+const INITIAL_GREETING_TEXT = "Hi, I'm Prabh — an AI created by Abhay to power the Akshu Ecosystem. How can I help you today? ✨";
 
 
 export default function PrabhChatPage() {
