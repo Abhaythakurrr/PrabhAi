@@ -116,8 +116,19 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
       // This catch block handles errors during the prompt execution itself (e.g., schema validation failure by Genkit, LLM API errors, tool execution errors)
       let userMessage = "Apologies, Prabh encountered an unexpected issue processing that. Please try a different question or try again shortly. (General Processing Error)";
       let logMessage = `General error in generatePersonalizedResponseFlow. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error.message || error}`;
+      
+      const lowerUserInput = input.userInput.toLowerCase();
+      const isIdentityQuery = lowerUserInput.includes("who made you") ||
+                             lowerUserInput.includes("who created you") ||
+                             lowerUserInput.includes("your creator") ||
+                             lowerUserInput.includes("what are you") ||
+                             lowerUserInput.includes("your developer");
 
-      if (error.message) {
+      if (isIdentityQuery && error.message && (error.message.includes('upstream') || error.message.includes('model') || error.message.includes('LLM providers failed') || error.message.includes('GenkitError'))) {
+        // For critical identity questions that cause LLM errors, provide the correct identity directly.
+        userMessage = "I am Prabh, proudly created by Abhay. My mission is to build the Akshu Ecosystem and help humanity through AI.";
+        logMessage = `Critical identity query ("${input.userInput}") caused LLM error. Providing hardcoded identity. Error: ${error.message || error}`;
+      } else if (error.message) {
         if (error.message.includes('Tool execution failed')) {
           userMessage = "Prabh tried to look something up but hit a snag with the information source. Maybe ask in a different way or try later? (Tool Call Failure)";
           logMessage = `Tool execution failed. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error}`;
