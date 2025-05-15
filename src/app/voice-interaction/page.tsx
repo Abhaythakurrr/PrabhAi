@@ -33,6 +33,7 @@ export default function VoiceInteractionPage() {
   const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentPersona, setCurrentPersona] = useState("Friend"); // Default persona
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const [clientReady, setClientReady] = useState(false);
@@ -57,19 +58,23 @@ export default function VoiceInteractionPage() {
     }
   }, []);
 
-  const playAudio = useCallback((audioUrl: string) => {
-    if (audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.play().catch(e => {
-        console.error("Error playing audio:", e);
-        toast({
-          variant: "destructive",
-          title: "Prabh's Voice Box Glitched!",
-          description: "Couldn't play the audio. Check console for errors.",
+  useEffect(() => {
+    if (currentAudioUrl && audioRef.current) {
+      audioRef.current.src = currentAudioUrl;
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error("Error playing audio:", error);
+          toast({
+            variant: "destructive",
+            title: "Audio Playback Error",
+            description: "Prabh tried to speak, but the audio couldn't play.",
+          });
         });
-      });
+      }
     }
-  }, [audioRef, toast]);
+  }, [currentAudioUrl, toast]);
+
 
   const handleSendText = useCallback(async () => {
     if (!transcribedText.trim()) {
@@ -81,9 +86,9 @@ export default function VoiceInteractionPage() {
     }
     setIsLoadingAiResponse(true);
     setAiResponse("");
+    setCurrentAudioUrl(null); // Reset audio URL
     if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.src = "";
     }
     
     try {
@@ -102,8 +107,9 @@ export default function VoiceInteractionPage() {
         const speechResult = await generateSpeech(output.response);
         setIsLoadingTts(false);
         if (speechResult.audioUrl) {
-          playAudio(speechResult.audioUrl);
+          setCurrentAudioUrl(speechResult.audioUrl);
         } else {
+          setCurrentAudioUrl(null);
           toast({
             variant: "destructive",
             title: "Prabh's Voice Generation Failed",
@@ -114,6 +120,7 @@ export default function VoiceInteractionPage() {
     } catch (error: any) {
       console.error("Error in AI interaction pipeline:", error);
       setAiResponse("Oops! Prabh's circuits got a bit tangled. Try again, will you?");
+      setCurrentAudioUrl(null);
       toast({
         variant: "destructive",
         title: "Prabh Stumbled!",
@@ -122,7 +129,7 @@ export default function VoiceInteractionPage() {
       setIsLoadingAiResponse(false);
       setIsLoadingTts(false);
     }
-  }, [transcribedText, currentPersona, toast, setAiResponse, setIsLoadingAiResponse, setIsLoadingTts, playAudio, audioRef]);
+  }, [transcribedText, currentPersona, toast, setIsLoadingAiResponse, setAiResponse, setCurrentAudioUrl]);
 
 
   useEffect(() => {
@@ -131,7 +138,6 @@ export default function VoiceInteractionPage() {
     recognitionInstance.onresult = (event) => {
       const transcript = event.results[0][0].transcript;
       setTranscribedText(transcript);
-      // No longer stop recording here, let onend handle it or user stop.
     };
 
     recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { 
@@ -156,7 +162,6 @@ export default function VoiceInteractionPage() {
     
     recognitionInstance.onend = () => {
         setIsRecording(false); 
-        // Auto-send logic will be handled by the useEffect watching isRecording and transcribedText
     };
 
     return () => {
@@ -164,15 +169,14 @@ export default function VoiceInteractionPage() {
         recognitionInstance.onresult = null;
         recognitionInstance.onerror = null;
         recognitionInstance.onend = null;
-        if (isRecording) { // Ensure to stop if component unmounts while recording
+        if (isRecording) { 
             recognitionInstance.stop();
         }
       }
     };
-  }, [clientReady, toast, isRecording]); // isRecording added to manage stop on unmount
+  }, [clientReady, toast, isRecording]); 
 
   useEffect(() => {
-    // Auto-send when recording stops and there's transcribed text
     if (previousIsRecording.current && !isRecording && transcribedText.trim()) {
       handleSendText();
     }
@@ -213,13 +217,13 @@ export default function VoiceInteractionPage() {
     }
     if (isRecording) {
       recognitionInstance.stop();
-      setIsRecording(false); // Explicitly set here as onend might be delayed
+      setIsRecording(false); 
     } else {
       setTranscribedText(""); 
       setAiResponse(""); 
+      setCurrentAudioUrl(null); // Reset audio URL
       if (audioRef.current) {
         audioRef.current.pause();
-        audioRef.current.src = "";
       }
       try {
         recognitionInstance.start();
@@ -286,7 +290,7 @@ export default function VoiceInteractionPage() {
           />
           
           <Button 
-            onClick={() => handleSendText()} // Ensure it calls without expecting arguments from button click
+            onClick={handleSendText} 
             disabled={isLoadingAiResponse || isLoadingTts || !transcribedText.trim()} 
             className="w-full text-lg py-3"
             aria-label="Send message to PrabhAI"
@@ -311,7 +315,7 @@ export default function VoiceInteractionPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-foreground whitespace-pre-wrap">{aiResponse}</p>
-                <audio ref={audioRef} className="w-full mt-4" controls />
+                {currentAudioUrl && <audio ref={audioRef} className="w-full mt-4" controls />}
               </CardContent>
             </Card>
           )}
@@ -325,4 +329,3 @@ export default function VoiceInteractionPage() {
     </div>
   );
 }
-
