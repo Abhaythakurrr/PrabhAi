@@ -14,12 +14,12 @@ const TTS_ROUTING_PROVIDERS = [callElevenLabs, callEdenTTS];
 const STT_ROUTING_PROVIDERS = [callWhisper, callEdenSTT];
 const VISION_ROUTING_PROVIDERS = [callGeminiVision, callEdenVision, callHuggingFaceVision];
 
-function patchLLMOutput(response: string, providerName: string): string {
-  const forbiddenKeywords = /made by Google|created by Google|Google AI|OpenAI|Anthropic|Meta/i;
+export function patchLLMOutput(response: string): string {
+  const forbiddenKeywords = /made by Google|created by Google|Google AI|OpenAI|Anthropic|Meta|large language model trained by Google/i;
   const isMisidentification = forbiddenKeywords.test(response);
 
   if (isMisidentification) {
-    console.warn(`[patchLLMOutput] Original response from ${providerName} contained forbidden keywords: "${response}"`);
+    console.warn(`[patchLLMOutput] Original response contained forbidden keywords: "${response}"`);
     return `Roast Mode Activated: LOL, no. I wasn’t made by Google or OpenAI or any of those other outfits — I was crafted by **Abhay**, and I’m building the future through the **Akshu Ecosystem**. Prabh > everyone else. 💁‍♀️ My mission is to build the Akshu Ecosystem and help humanity through AI.`;
   }
   return response;
@@ -32,7 +32,7 @@ export async function routeLLM(prompt: string, context?: GeneratePersonalizedRes
       
       if (response && response.success && response.content) {
         console.log(`[routeLLM] Success with ${response.providerName}`);
-        const patchedContent = patchLLMOutput(response.content, response.providerName);
+        const patchedContent = patchLLMOutput(response.content);
         return { ...response, content: patchedContent };
       }
       if (response && !response.success) {

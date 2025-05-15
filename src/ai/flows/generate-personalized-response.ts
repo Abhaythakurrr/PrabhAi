@@ -14,6 +14,7 @@ import {ai} from '@/ai/genkit';
 import {getSystemPrompt} from '@/ai/persona';
 import {z} from 'genkit';
 import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool';
+import { patchLLMOutput } from '@/services/apiRouter/apiRouter'; // Import the patch function
 
 const GeneratePersonalizedResponseInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
@@ -91,7 +92,9 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
       });
 
       if (output && typeof output.response === 'string' && output.response.trim() !== "") {
-        return output;
+        // Apply the patch function here
+        const patchedResponse = patchLLMOutput(output.response);
+        return { response: patchedResponse };
       } else {
         console.warn(
           'generatePersonalizedResponsePrompt returned a null, empty, or malformed output. Input:',
