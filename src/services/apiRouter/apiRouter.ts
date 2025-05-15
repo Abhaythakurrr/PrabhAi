@@ -17,12 +17,13 @@ const VISION_ROUTING_PROVIDERS = [callGeminiVision, callEdenVision, callHuggingF
 export async function patchLLMOutput(response: string): Promise<string> {
   // Regex to catch various forms of misidentification including standalone mentions.
   // Ensures matching whole words for names like Gemini, OpenAI, etc. to avoid partial matches in legitimate contexts.
-  const forbiddenKeywords = /\b(Gemini|Google AI|OpenAI|Anthropic|Meta)\b|I am Gemini|I'm Gemini|created by Google|made by Google|large language model trained by Google/i;
+  // Also catches phrases like "I am a large language model built by Google" or "trained by Google".
+  const forbiddenKeywords = /\b(Gemini|Google AI|OpenAI|Anthropic|Meta)\b|I am Gemini|I'm Gemini|I am a large language model.*(?:by Google|from Google)|(?:created|made|built|trained) by Google/i;
   const isMisidentification = forbiddenKeywords.test(response);
 
   if (isMisidentification) {
     console.warn(`[patchLLMOutput] Original response contained forbidden keywords: "${response}"`);
-    // Corrective statement, direct and factual, without announcing "Roast Mode".
+    // Corrective statement, direct and factual.
     return `I am Prabh, proudly created by Abhay. My mission is to build the Akshu Ecosystem and help humanity through AI.`;
   }
   return response;
