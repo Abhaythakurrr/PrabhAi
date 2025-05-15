@@ -11,8 +11,9 @@ import {
   Blocks,
   Settings,
   BotMessageSquare,
-  MessageSquare, // Added for new chat page
-  Library // Added for Deep Research
+  MessageSquare,
+  Library,
+  Cpu // Added for Core Systems
 } from 'lucide-react';
 
 export interface NavItem {
@@ -30,7 +31,7 @@ export const mainNav: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Prabh Chat', 
+    title: 'Prabh Chat',
     href: '/prabh-chat',
     icon: MessageSquare,
   },
@@ -50,9 +51,14 @@ export const mainNav: NavItem[] = [
     icon: Newspaper,
   },
   {
-    title: 'Deep Research', // New Page
+    title: 'Deep Research',
     href: '/deep-research',
     icon: Library,
+  },
+  {
+    title: "Prabh's Core Systems", // New Page
+    href: '/core-systems',
+    icon: Cpu,
   },
   {
     title: 'Media Generation',
