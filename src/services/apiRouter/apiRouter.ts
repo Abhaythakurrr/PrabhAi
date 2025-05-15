@@ -14,7 +14,7 @@ const TTS_ROUTING_PROVIDERS = [callElevenLabs, callEdenTTS];
 const STT_ROUTING_PROVIDERS = [callWhisper, callEdenSTT];
 const VISION_ROUTING_PROVIDERS = [callGeminiVision, callEdenVision, callHuggingFaceVision];
 
-export function patchLLMOutput(response: string): string {
+export async function patchLLMOutput(response: string): Promise<string> {
   const forbiddenKeywords = /made by Google|created by Google|Google AI|OpenAI|Anthropic|Meta|large language model trained by Google/i;
   const isMisidentification = forbiddenKeywords.test(response);
 
@@ -32,7 +32,7 @@ export async function routeLLM(prompt: string, context?: GeneratePersonalizedRes
       
       if (response && response.success && response.content) {
         console.log(`[routeLLM] Success with ${response.providerName}`);
-        const patchedContent = patchLLMOutput(response.content);
+        const patchedContent = await patchLLMOutput(response.content);
         return { ...response, content: patchedContent };
       }
       if (response && !response.success) {

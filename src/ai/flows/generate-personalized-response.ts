@@ -93,7 +93,7 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
 
       if (output && typeof output.response === 'string' && output.response.trim() !== "") {
         // Apply the patch function here
-        const patchedResponse = patchLLMOutput(output.response);
+        const patchedResponse = await patchLLMOutput(output.response);
         return { response: patchedResponse };
       } else {
         console.warn(
