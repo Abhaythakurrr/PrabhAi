@@ -1,5 +1,8 @@
+
 // src/services/news-service.ts
 'use server';
+
+import { robustCall } from '@/lib/robust-call';
 
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWS_API_BASE_URL = 'https://newsapi.org/v2';
@@ -26,16 +29,17 @@ interface NewsApiResponse {
   message?: string; // For errors
 }
 
-export async function fetchTopHeadlines(
+// Internal function to be wrapped by robustCall
+async function _fetchTopHeadlinesInternal(
   country: string = 'us',
   category?: string,
   query?: string,
   pageSize: number = 20
 ): Promise<Article[]> {
   if (!NEWS_API_KEY) {
-    console.error('News API key is not configured.');
-    // Returning an empty array or throwing a custom error might be better in a real app
-    return mockArticles.slice(0, pageSize); // Fallback to mock data if key is missing
+    // This check remains as it's a configuration error, not a network/API error
+    console.error('News API key is not configured. robustCall will not be attempted.');
+    throw new Error('News API key is not configured.');
   }
 
   let url = `${NEWS_API_BASE_URL}/top-headlines?country=${country}&pageSize=${Math.min(pageSize, 100)}`;
@@ -46,33 +50,51 @@ export async function fetchTopHeadlines(
     url += `&q=${encodeURIComponent(query)}`;
   }
 
+  const response = await fetch(url, {
+    headers: {
+      'X-Api-Key': NEWS_API_KEY,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData: NewsApiResponse = await response.json().catch(() => ({ status: 'error', message: 'Failed to parse error response from NewsAPI', totalResults: 0, articles: [] }));
+    const errorMessage = `News API error (${response.status}): ${errorData.message || 'Failed to fetch news'}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  const data: NewsApiResponse = await response.json();
+  
+  if (data.status === 'error') {
+    const errorMessage = `News API returned an error status: ${data.message || 'Unknown NewsAPI error'}`;
+    console.error(errorMessage);
+    throw new Error(errorMessage);
+  }
+
+  return data.articles;
+}
+
+export async function fetchTopHeadlines(
+  country: string = 'us',
+  category?: string,
+  query?: string,
+  pageSize: number = 20
+): Promise<Article[]> {
   try {
-    const response = await fetch(url, {
-      headers: {
-        'X-Api-Key': NEWS_API_KEY,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData: NewsApiResponse = await response.json();
-      console.error(`News API error (${response.status}): ${errorData.message || 'Failed to fetch news'}`);
-      // Fallback or throw more specific error
-      return mockArticles.slice(0, pageSize); 
-    }
-
-    const data: NewsApiResponse = await response.json();
-    
-    if (data.status === 'error') {
-      console.error(`News API returned an error: ${data.message}`);
-      return mockArticles.slice(0, pageSize);
-    }
-
-    return data.articles;
+    // Pass arguments to robustCall as an array
+    return await robustCall(
+      _fetchTopHeadlinesInternal,
+      [country, category, query, pageSize] as [string, string | undefined, string | undefined, number],
+      3, // retries
+      1000 // initialDelayMs
+    );
   } catch (error) {
-    console.error('Failed to fetch news from News API:', error);
-    return mockArticles.slice(0, pageSize); // Fallback to mock data on network or other errors
+    console.error('All attempts to fetch news from News API failed after retries:', error);
+    // Fallback to mock data as a last resort if all retries fail
+    return mockArticles.slice(0, pageSize);
   }
 }
+
 
 // Mock data as a fallback, especially useful during development or API limits
 const mockArticles: Article[] = [
