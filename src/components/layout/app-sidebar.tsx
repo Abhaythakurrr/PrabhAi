@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { LucideIcon } from 'lucide-react';
+// import type { LucideIcon } from 'lucide-react'; // Not directly used here anymore for icon type
 
 import { cn } from '@/lib/utils';
 import {
@@ -18,7 +18,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { mainNav, footerNav, AppLogoIcon } from '@/config/nav'; // AppLogoIcon is now a component
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // Not used
 import { Separator } from '@/components/ui/separator';
 
 interface AppSidebarProps {
@@ -37,8 +37,10 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <SidebarHeader className="flex items-center justify-between p-4">
         <Link href="/" className="flex items-center gap-2">
-          {/* Pass 'relative' and sizing classes to AppLogoIcon */}
-          <AppLogoIcon className="relative h-8 w-8" />
+          {/* Added a div wrapper for AppLogoIcon to handle relative positioning and dimensions */}
+          <div className="relative h-8 w-8">
+            <AppLogoIcon />
+          </div>
           {open && <span className="text-xl font-semibold">PrabhAI</span>}
         </Link>
         <div className="md:hidden">

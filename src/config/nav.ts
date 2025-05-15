@@ -8,7 +8,7 @@ import {
   Mic,
   Users,
   Newspaper,
-  ImageIcon as ImageLucide,
+  ImageIcon as ImageLucide, // Renamed to avoid conflict with next/image
   Brain,
   Shuffle,
   Blocks,
@@ -28,17 +28,17 @@ export interface NavItem {
 }
 
 // Define AppLogoIcon as a React component
-// The component now expects the full className (including 'relative' and dimensions) to be passed from the parent.
+// It now directly returns the Image component.
+// The parent component (app-sidebar.tsx, mobile-header.tsx) is responsible for the wrapper div and sizing.
 export const AppLogoIcon: React.FC<{ className?: string }> = ({ className }) => {
   return (
-    <div className={className}>
-      <Image
-        src="/logo/logo.png" // Path to your logo in public/logo/
-        alt="PrabhAI Logo"
-        layout="fill" // Fills the parent div
-        objectFit="contain" // Ensures the logo scales correctly
-      />
-    </div>
+    <Image
+      src={"/logo/logo.png"} // Path to your logo in public/logo/ - explicitly a JSX expression
+      alt="PrabhAI Logo"
+      width={32} // Added explicit width
+      height={32} // Added explicit height
+      className={className} // Apply any passed className to the Image itself
+    />
   );
 };
 
