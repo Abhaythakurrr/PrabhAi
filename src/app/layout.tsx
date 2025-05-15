@@ -1,6 +1,6 @@
 
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Changed from Geist
+import { Poppins } from 'next/font/google'; // Changed from Inter
 import { Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
@@ -8,9 +8,10 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { MobileHeader } from '@/components/layout/mobile-header';
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ // Changed from geistSans
-  variable: '--font-inter', // Changed variable name
+const poppins = Poppins({ // Changed from inter
+  variable: '--font-poppins', // Changed variable name
   subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'] // Added weights for Poppins
 });
 
 const geistMono = Geist_Mono({
@@ -30,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${geistMono.variable} antialiased`}> {/* Updated font variable */}
+      <body className={`${poppins.variable} ${geistMono.variable} font-sans antialiased`}> {/* Updated font variable and added font-sans */}
         <SidebarProvider defaultOpen={false}>
           <AppSidebar />
           <SidebarRail />

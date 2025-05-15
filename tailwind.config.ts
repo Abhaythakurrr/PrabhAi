@@ -2,7 +2,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-    darkMode: ["class"],
+    darkMode: ["class"], // Kept for potential future light/dark toggle, though current theme is dark by default
     content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,7 +11,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'sans-serif'], // Changed from Geist Sans
+        sans: ['var(--font-poppins)', 'sans-serif'], // Changed to Poppins
         mono: ['var(--font-geist-mono)', 'monospace'],
       },
       colors: {
@@ -88,7 +88,7 @@ export default {
             height: '0'
           }
         },
-        'spin-slow-kf': { // Added unique keyframe name
+        'spin-slow-kf': { 
           from: {
             transform: 'rotate(0deg)'
           },
@@ -100,7 +100,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'spin-slow': 'spin-slow-kf 3s linear infinite' // Reference unique keyframe
+        'spin-slow': 'spin-slow-kf 3s linear infinite' 
       }
     }
   },
