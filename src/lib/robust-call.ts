@@ -1,6 +1,5 @@
 
 // src/lib/robust-call.ts
-'use server';
 
 /**
  * A simple promise-based delay function.
@@ -30,19 +29,19 @@ export async function robustCall<T extends (...args: any[]) => Promise<any>>(
     try {
       return await fn(...args);
     } catch (e: any) {
-      console.warn(`Attempt ${i + 1} of ${retries} for ${fn.name || 'anonymous function'} failed:`, e.message);
+      console.warn(`[robustCall] Attempt ${i + 1} of ${retries} for ${fn.name || 'anonymous function'} failed:`, e.message);
       if (i < retries - 1) {
         const delay = initialDelayMs * Math.pow(2, i); // Exponential backoff
-        console.log(`Retrying in ${delay}ms...`);
+        console.log(`[robustCall] Retrying in ${delay}ms...`);
         await wait(delay);
       } else {
-        console.error(`All ${retries} attempts failed for ${fn.name || 'anonymous function'}.`);
+        console.error(`[robustCall] All ${retries} attempts failed for ${fn.name || 'anonymous function'}.`);
         throw e; // Re-throw the last error
       }
     }
   }
   // This line should theoretically be unreachable due to the throw in the loop
-  throw new Error("All attempts failed. This should not be reached.");
+  throw new Error("[robustCall] All attempts failed. This should not be reached.");
 }
 
 // Example usage (not part of the actual app code, just for illustration)
