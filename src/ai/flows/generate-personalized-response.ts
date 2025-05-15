@@ -77,7 +77,8 @@ You have access to the 'getLatestNewsHeadlinesTool' to fetch real-time informati
 
 - **Your entire process of deciding to use the tool, getting its output, and formulating your final answer should happen internally. The user should receive a single, coherent response.**
 - **CRITICAL: After any tool use, you MUST return to the user's original question/request and provide a direct answer based on the information obtained or state that it could not be found. Do not get sidetracked. Do not just offer to check again.**
-- Ensure your final response is always a single text string for the user, as per the output schema, providing a "response" field.
+
+**CRITICAL FINAL INSTRUCTION: Your final output MUST be a JSON object with a single key 'response'. The value of 'response' MUST be a string containing your complete textual reply to the user. Example: \`{"response": "Hello, this is Prabh speaking."}\`**
 
 Respond as Prabh:`,
 });
@@ -102,36 +103,34 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
         return { response: patchedResponse };
       } else {
         console.warn(
-          'generatePersonalizedResponsePrompt returned a null, empty, or malformed output. Input:',
+          'generatePersonalizedResponsePrompt returned a null, empty, or malformed output (but did not throw schema error). Input:',
           JSON.stringify(input),
           'System Message:', systemMessage,
           'Actual output from prompt call:',
           JSON.stringify(output) 
         );
         // Fallback message if the LLM output is empty or malformed after a successful prompt call
-        return { response: "Prabh's thoughts got a bit tangled there, or the response was empty. Could you try asking in a different way? Sometimes my AI brain has a brief hiccup after checking for info (or deciding not to)!" };
+        return { response: await patchLLMOutput("Prabh's thoughts got a bit tangled there (empty/malformed output). Could you try asking in a different way? Sometimes my AI brain has a brief hiccup after checking for info (or deciding not to)!") };
       }
     } catch (error: any) {
       // This catch block handles errors during the prompt execution itself (e.g., schema validation failure by Genkit, LLM API errors, tool execution errors)
-      console.error(
-        'Error during prompt execution (e.g., schema validation, LLM error, tool error) in generatePersonalizedResponseFlow. Input:',
-        JSON.stringify(input),
-        'System Message:', systemMessage,
-        'Error:',
-        error 
-      );
-      
-      let userMessage = "Apologies, Prabh encountered an unexpected issue processing that. Please try a different question or try again shortly.";
+      let userMessage = "Apologies, Prabh encountered an unexpected issue processing that. Please try a different question or try again shortly. (General Processing Error)";
+      let logMessage = `General error in generatePersonalizedResponseFlow. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error.message || error}`;
+
       if (error.message) {
         if (error.message.includes('Tool execution failed')) {
-          userMessage = "Prabh tried to look something up but hit a snag with the information source. Maybe ask in a different way or try later?";
+          userMessage = "Prabh tried to look something up but hit a snag with the information source. Maybe ask in a different way or try later? (Tool Call Failure)";
+          logMessage = `Tool execution failed. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error}`;
         } else if (error.message.includes('Schema validation failed')) {
-           userMessage = "Prabh's trying to make sense of the information, but it's a bit scrambled right now. Could you rephrase your question? This can happen if the topic is very complex or if I couldn't structure the output as expected.";
-        } else if (error.message.includes('upstream') || error.message.includes('model')) { 
-           userMessage = "Prabh seems to be having a bit of trouble connecting to the wider world or with the AI model right now. Please try again in a moment.";
+           userMessage = "Prabh's trying to make sense of the information, but it's a bit scrambled right now. Could you rephrase your question? (Output Formatting Issue)";
+           logMessage = `Schema validation failed. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error}`;
+        } else if (error.message.includes('upstream') || error.message.includes('model') || error.message.includes('LLM providers failed')) { 
+           userMessage = "Prabh seems to be having a bit of trouble connecting to the wider world or with the AI model right now. Please try again in a moment. (AI Model/Connection Issue)";
+           logMessage = `Model/Upstream error. Input: ${JSON.stringify(input)}, System: ${systemMessage}, Error: ${error}`;
         }
       }
-      return { response: userMessage };
+      console.error(logMessage); // More detailed server log
+      return { response: await patchLLMOutput(userMessage) };
     }
   }
 );
