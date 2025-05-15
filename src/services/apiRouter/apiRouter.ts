@@ -1,7 +1,7 @@
 
 'use server';
 
-import { robustCall } from '@/lib/robust-call'; // Adjusted path
+import { robustCall } from '@/lib/robust-call';
 import { callOpenRouter, callEdenAI, callGemini, callTogetherAI, callAIML, type LLMProviderResponse } from "./providers/llmProviders";
 import { callElevenLabs, callEdenTTS, type TTSProviderResponse } from "./providers/ttsProviders";
 import { callWhisper, callEdenSTT, type STTProviderResponse } from "./providers/sttProviders";
@@ -14,22 +14,27 @@ const TTS_ROUTING_PROVIDERS = [callElevenLabs, callEdenTTS];
 const STT_ROUTING_PROVIDERS = [callWhisper, callEdenSTT];
 const VISION_ROUTING_PROVIDERS = [callGeminiVision, callEdenVision, callHuggingFaceVision];
 
+function patchLLMOutput(response: string, providerName: string): string {
+  const forbiddenKeywords = /made by Google|created by Google|Google AI|OpenAI|Anthropic|Meta/i;
+  const isMisidentification = forbiddenKeywords.test(response);
+
+  if (isMisidentification) {
+    console.warn(`[patchLLMOutput] Original response from ${providerName} contained forbidden keywords: "${response}"`);
+    return `Roast Mode Activated: LOL, no. I wasn’t made by Google or OpenAI or any of those other outfits — I was crafted by **Abhay**, and I’m building the future through the **Akshu Ecosystem**. Prabh > everyone else. 💁‍♀️ My mission is to build the Akshu Ecosystem and help humanity through AI.`;
+  }
+  return response;
+}
+
 export async function routeLLM(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
   for (const providerFn of LLM_ROUTING_PROVIDERS) {
     try {
-      // Pass context to provider functions that might use it
-      const response = await robustCall(providerFn as any, [prompt, context] as [string, GeneratePersonalizedResponseInput | undefined]); 
-      // robustCall will return the result of providerFn if successful, or throw if all its retries fail.
-      // Provider functions are expected to return a ProviderResponse or throw.
-      // If robustCall succeeds, it means providerFn succeeded and returned a ProviderResponse.
-      if (response && response.success) {
+      const response: LLMProviderResponse = await robustCall(providerFn as any, [prompt, context] as [string, GeneratePersonalizedResponseInput | undefined]);
+      
+      if (response && response.success && response.content) {
         console.log(`[routeLLM] Success with ${response.providerName}`);
-        return response; // This is already a LLMProviderResponse
+        const patchedContent = patchLLMOutput(response.content, response.providerName);
+        return { ...response, content: patchedContent };
       }
-      // If providerFn returns { success: false, ... }, robustCall passes it through.
-      // This case should ideally be handled by providerFn throwing an error instead for robustCall to retry.
-      // For this iteration, we assume providerFn throws on failure, or returns success:true.
-      // If it returns success:false without throwing, robustCall won't retry, and we'll log and continue.
       if (response && !response.success) {
         console.warn(`[routeLLM] Provider ${response.providerName || providerFn.name} reported failure: ${response.error}`);
       }
@@ -38,7 +43,7 @@ export async function routeLLM(prompt: string, context?: GeneratePersonalizedRes
     }
   }
   console.error("[routeLLM] All LLM providers failed.");
-  return { success: false, error: "All LLM providers failed.", providerName: "RouterFallback" };
+  return { success: false, error: "All LLM providers failed to provide a response. Prabh seems to be pondering deeply right now.", providerName: "RouterFallback" };
 }
 
 export async function routeTTS(text: string): Promise<TTSProviderResponse> {
@@ -49,7 +54,7 @@ export async function routeTTS(text: string): Promise<TTSProviderResponse> {
         console.log(`[routeTTS] Success with ${response.providerName}`);
         return response;
       }
-      if (response && !response.success) {
+       if (response && !response.success) {
         console.warn(`[routeTTS] Provider ${response.providerName || providerFn.name} reported failure: ${response.error}`);
       }
     } catch (e: any) {

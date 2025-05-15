@@ -28,6 +28,9 @@ interface StoredInteraction {
 const NEUTRAL_PERSONA_NAME = "Prabh (Neutral)";
 const TYPING_SPEED_MS_PER_CHUNK = 75; 
 const MEMORY_KEY = 'prabhAiMemory';
+const INITIAL_GREETING_ID = "prabh-initial-greeting";
+const INITIAL_GREETING_TEXT = "Hi, I'm Prabh — created by Abhay to power the Akshu Ecosystem. Ask me anything, but don’t mix me up with those boring bots like ChatGPT or Gemini. 😉";
+
 
 export default function PrabhChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -44,6 +47,21 @@ export default function PrabhChatPage() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    // Add initial greeting if messages are empty
+    if (messages.length === 0) {
+      const greetingMessage: ChatMessage = {
+        id: INITIAL_GREETING_ID,
+        text: INITIAL_GREETING_TEXT,
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages([greetingMessage]);
+      saveInteractionToMemory(greetingMessage, NEUTRAL_PERSONA_NAME);
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
+
 
   useEffect(() => {
     scrollToBottom();
@@ -63,6 +81,10 @@ export default function PrabhChatPage() {
         text: message.text,
         persona: message.sender === 'ai' ? persona || NEUTRAL_PERSONA_NAME : undefined,
       };
+      // Avoid duplicate initial greeting in memory if already exists
+      if (message.id === INITIAL_GREETING_ID && currentMemory.some(m => m.id === INITIAL_GREETING_ID)) {
+        return;
+      }
       currentMemory.push(newInteraction);
       localStorage.setItem(MEMORY_KEY, JSON.stringify(currentMemory));
     } catch (error) {
@@ -134,9 +156,12 @@ export default function PrabhChatPage() {
       setIsLoading(false);
       console.error("Error generating response from Prabh:", error);
       const errorTimestamp = new Date();
+      const errorMessageText = (error.message && error.message.includes("All LLM providers failed")) 
+        ? "Prabh's feeling a bit overwhelmed and couldn't connect to any thought streams. Maybe try again in a moment?"
+        : "Prabh's feeling a bit quiet right now. Try again in a moment?";
       const errorMessage: ChatMessage = { 
         id: Date.now().toString() + '_ai_error', 
-        text: "Prabh's feeling a bit quiet right now. Try again in a moment?", 
+        text: errorMessageText, 
         sender: 'ai', 
         timestamp: errorTimestamp
       };
