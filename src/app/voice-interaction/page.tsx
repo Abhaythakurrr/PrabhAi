@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,11 +36,11 @@ export default function VoiceInteractionPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const [clientReady, setClientReady] = useState(false);
+  const previousIsRecording = useRef(false);
 
   useEffect(() => {
     setClientReady(true); // Indicate client has mounted and browser APIs can be checked
 
-    // Load persona from localStorage if available
     const savedPersonaId = localStorage.getItem('selectedPersonaId');
     const customName = localStorage.getItem('customPersonaName');
     if (savedPersonaId) {
@@ -57,108 +57,7 @@ export default function VoiceInteractionPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!clientReady || !recognitionInstance) return;
-
-    recognitionInstance.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setTranscribedText(transcript);
-      setIsRecording(false); 
-    };
-
-    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { 
-      let description = `Speech recognition error: ${event.error}. Maybe try typing?`;
-      if (event.error === 'network') {
-        description = "Prabh's having trouble reaching the speech service. Please check your internet connection and try again. You can also type your message.";
-      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        description = "Prabh can't access your microphone. Please check your browser's microphone permissions for this site. You can also type your message.";
-      } else if (event.error === 'no-speech') {
-        description = "Prabh didn't hear anything. Make sure your mic is working and try speaking again. Or, type your message!";
-      } else if (event.error === 'audio-capture') {
-        description = "Prabh couldn't capture audio. Is another app using your microphone? Try closing other apps or restarting your browser. You can also type!";
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Prabh's Ears Are Acting Up!",
-        description: description,
-      });
-      setIsRecording(false);
-    };
-    
-    recognitionInstance.onend = () => {
-        setIsRecording(false);
-    };
-
-    return () => {
-      if (recognitionInstance) {
-        recognitionInstance.onresult = null;
-        recognitionInstance.onerror = null;
-        recognitionInstance.onend = null;
-        if (isRecording) {
-            recognitionInstance.stop();
-        }
-      }
-    };
-  }, [clientReady, toast, isRecording]); 
-
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (isLoadingAiResponse || isLoadingTts) {
-      setProgress(0);
-      let currentProgress = 0;
-      const increment = isLoadingAiResponse ? 10 : 20; 
-      const interval = isLoadingAiResponse ? 200 : 100;
-      timer = setInterval(() => {
-        currentProgress += increment;
-        if (currentProgress > 100) {
-          setProgress(100); 
-          clearInterval(timer);
-        } else {
-          setProgress(currentProgress);
-        }
-      }, interval);
-    } else {
-      setProgress(0);
-    }
-    return () => clearInterval(timer);
-  }, [isLoadingAiResponse, isLoadingTts]);
-
-  const handleToggleRecording = () => {
-    if (!clientReady || !recognitionInstance) {
-       toast({
-        variant: "destructive",
-        title: "Mic Check Failed!",
-        description: "Speech recognition is not supported or enabled in your browser, Prabh.",
-      });
-      return;
-    }
-    if (isRecording) {
-      recognitionInstance.stop();
-    } else {
-      setTranscribedText(""); 
-      setAiResponse(""); 
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-      try {
-        recognitionInstance.start();
-        setIsRecording(true);
-      } catch (error) {
-        console.error("Error starting speech recognition:", error);
-        toast({
-            variant: "destructive",
-            title: "Mic Busy!",
-            description: "Prabh couldn't start listening. Is the mic already active or an issue with the speech service?"
-        });
-        setIsRecording(false);
-      }
-    }
-  };
-
-  const playAudio = (audioUrl: string) => {
+  const playAudio = useCallback((audioUrl: string) => {
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play().catch(e => {
@@ -170,9 +69,9 @@ export default function VoiceInteractionPage() {
         });
       });
     }
-  };
+  }, [audioRef, toast]);
 
-  const handleSendText = async () => {
+  const handleSendText = useCallback(async () => {
     if (!transcribedText.trim()) {
       toast({
         title: "Speak Up, Prabh Can't Hear Silence!",
@@ -212,7 +111,7 @@ export default function VoiceInteractionPage() {
           });
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error in AI interaction pipeline:", error);
       setAiResponse("Oops! Prabh's circuits got a bit tangled. Try again, will you?");
       toast({
@@ -223,11 +122,123 @@ export default function VoiceInteractionPage() {
       setIsLoadingAiResponse(false);
       setIsLoadingTts(false);
     }
-  };
+  }, [transcribedText, currentPersona, toast, setAiResponse, setIsLoadingAiResponse, setIsLoadingTts, playAudio, audioRef]);
 
+
+  useEffect(() => {
+    if (!clientReady || !recognitionInstance) return;
+
+    recognitionInstance.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setTranscribedText(transcript);
+      // No longer stop recording here, let onend handle it or user stop.
+    };
+
+    recognitionInstance.onerror = (event: SpeechRecognitionErrorEvent) => { 
+      let description = `Speech recognition error: ${event.error}. Maybe try typing?`;
+      if (event.error === 'network') {
+        description = "Prabh's having trouble reaching the speech service. Please check your internet connection and try again. You can also type your message.";
+      } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        description = "Prabh can't access your microphone. Please check your browser's microphone permissions for this site. You can also type your message.";
+      } else if (event.error === 'no-speech') {
+        description = "Prabh didn't hear anything. Make sure your mic is working and try speaking again. Or, type your message!";
+      } else if (event.error === 'audio-capture') {
+        description = "Prabh couldn't capture audio. Is another app using your microphone? Try closing other apps or restarting your browser. You can also type!";
+      }
+      
+      toast({
+        variant: "destructive",
+        title: "Prabh's Ears Are Acting Up!",
+        description: description,
+      });
+      setIsRecording(false);
+    };
+    
+    recognitionInstance.onend = () => {
+        setIsRecording(false); 
+        // Auto-send logic will be handled by the useEffect watching isRecording and transcribedText
+    };
+
+    return () => {
+      if (recognitionInstance) {
+        recognitionInstance.onresult = null;
+        recognitionInstance.onerror = null;
+        recognitionInstance.onend = null;
+        if (isRecording) { // Ensure to stop if component unmounts while recording
+            recognitionInstance.stop();
+        }
+      }
+    };
+  }, [clientReady, toast, isRecording]); // isRecording added to manage stop on unmount
+
+  useEffect(() => {
+    // Auto-send when recording stops and there's transcribed text
+    if (previousIsRecording.current && !isRecording && transcribedText.trim()) {
+      handleSendText();
+    }
+    previousIsRecording.current = isRecording;
+  }, [isRecording, transcribedText, handleSendText]);
+
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoadingAiResponse || isLoadingTts) {
+      setProgress(0);
+      let currentProgress = 0;
+      const increment = isLoadingAiResponse ? 10 : 20; 
+      const interval = isLoadingAiResponse ? 200 : 100;
+      timer = setInterval(() => {
+        currentProgress += increment;
+        if (currentProgress > 100) {
+          setProgress(100); 
+          clearInterval(timer);
+        } else {
+          setProgress(currentProgress);
+        }
+      }, interval);
+    } else {
+      setProgress(0);
+    }
+    return () => clearInterval(timer);
+  }, [isLoadingAiResponse, isLoadingTts]);
+
+  const handleToggleRecording = () => {
+    if (!clientReady || !recognitionInstance) {
+       toast({
+        variant: "destructive",
+        title: "Mic Check Failed!",
+        description: "Speech recognition is not supported or enabled in your browser, Prabh.",
+      });
+      return;
+    }
+    if (isRecording) {
+      recognitionInstance.stop();
+      setIsRecording(false); // Explicitly set here as onend might be delayed
+    } else {
+      setTranscribedText(""); 
+      setAiResponse(""); 
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      try {
+        recognitionInstance.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Error starting speech recognition:", error);
+        toast({
+            variant: "destructive",
+            title: "Mic Busy!",
+            description: "Prabh couldn't start listening. Is the mic already active or an issue with the speech service?"
+        });
+        setIsRecording(false);
+      }
+    }
+  };
+  
   const canRecord = clientReady && !!SpeechRecognitionAPI; 
-  const buttonDisabled = isRecording ? false : (!canRecord || isLoadingAiResponse || isLoadingTts);
-  const buttonText = isRecording 
+  const recordButtonDisabled = isLoadingAiResponse || isLoadingTts || (!isRecording && !canRecord);
+  const recordButtonText = isRecording 
     ? "Prabh is Listening..." 
     : (canRecord ? "Tap to Speak" : "Voice Not Supported");
 
@@ -251,14 +262,14 @@ export default function VoiceInteractionPage() {
               variant={isRecording ? "destructive" : "default"}
               className="w-full max-w-xs rounded-full text-lg py-6 shadow-md hover:shadow-lg transition-shadow disabled:opacity-70"
               aria-label={isRecording ? "Stop recording" : "Start recording"}
-              disabled={buttonDisabled}
+              disabled={recordButtonDisabled}
             >
               {isRecording ? (
-                <StopCircle className="mr-2 h-6 w-6" />
+                <StopCircle className="mr-2 h-6 w-6 animate-pulse" />
               ) : (
                 <Mic className="mr-2 h-6 w-6" />
               )}
-              {buttonText}
+              {recordButtonText}
             </Button>
             {isRecording && clientReady && ( 
               <p className="text-sm text-accent animate-pulse">Listening intently...</p>
@@ -275,7 +286,7 @@ export default function VoiceInteractionPage() {
           />
           
           <Button 
-            onClick={handleSendText} 
+            onClick={() => handleSendText()} // Ensure it calls without expecting arguments from button click
             disabled={isLoadingAiResponse || isLoadingTts || !transcribedText.trim()} 
             className="w-full text-lg py-3"
             aria-label="Send message to PrabhAI"
