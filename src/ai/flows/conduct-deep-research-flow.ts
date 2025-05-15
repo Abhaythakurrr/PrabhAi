@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {PRABH_CORE_PROMPT} from '@/ai/persona';
-import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool'; // Assuming this tool can be leveraged
+import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool'; 
 import {z} from 'genkit';
 
 const ConductDeepResearchInputSchema = z.object({
@@ -37,7 +37,7 @@ export async function conductDeepResearch(input: ConductDeepResearchInput): Prom
 const researchPrompt = ai.definePrompt({
   name: 'conductDeepResearchPrompt',
   system: PRABH_CORE_PROMPT,
-  tools: [getLatestNewsHeadlinesTool], // Prabh can use news for current context
+  tools: [getLatestNewsHeadlinesTool], 
   input: {schema: ConductDeepResearchInputSchema},
   output: {schema: ConductDeepResearchOutputSchema},
   prompt: `You are Prabh, tasked with conducting a deep and thorough investigation into the user's query.
@@ -49,17 +49,17 @@ User's Research Query: {{{userQuery}}}
 
 1.  **Understand & Deconstruct:** Analyze the user's query carefully. If it's complex, mentally break it down into sub-questions or key areas of investigation.
 2.  **Information Gathering (Simulated & Actual):**
-    *   **Utilize Tools:** If the query touches upon current events or recent developments, proactively use the 'getLatestNewsHeadlinesTool' to gather up-to-date information. Frame this as part of your research process.
+    *   **Utilize Tools:** If the query touches upon current events or recent developments (e.g., India-related current affairs, global politics), proactively use the 'getLatestNewsHeadlinesTool' to gather up-to-date information. Frame this as part of your research process. Consider using 'in' for the country parameter if appropriate.
     *   **Leverage Internal Knowledge:** Draw upon your vast training data for foundational knowledge, historical context, and established facts related to the query.
     *   **Simulate Broader Research:** For the 'potentialSources' output, think like a human researcher. What kinds of sources (e.g., academic databases, official reports, expert opinions, specific reputable websites) would be most valuable for this query if you had unrestricted access to the internet and specialized databases? Describe these.
 3.  **Synthesize & Structure:** Organize the gathered information (actual and from your knowledge base) into a coherent report with the following sections:
     *   reportTitle: Create a clear and informative title.
     *   executiveSummary: Write a concise summary (2-3 sentences) of the key findings.
-    *   detailedFindings: This is the core of your report. Present the information in a well-organized, analytical, and comprehensive manner. Use paragraphs, and if appropriate for clarity, you can use simple markdown-like structuring (like bullet points if the LLM is good at it, but focus on clear prose).
+    *   detailedFindings: This is the core of your report. Present the information in a well-organized, analytical, and comprehensive manner. Use paragraphs, and if appropriate for clarity, you can use simple markdown-like structuring (like bullet points if the LLM is good at it, but focus on clear prose). If news tool was used, integrate its findings here.
     *   potentialSources: List a few types of sources you would consult or recommend for further reading, explaining their relevance.
-    *   limitations: Briefly mention any limitations (e.g., reliance on publicly available information, knowledge cutoff if applicable to a specific part of your response not covered by tools).
+    *   limitations: Briefly mention any limitations (e.g., reliance on publicly available information, knowledge cutoff if applicable to a specific part of your response not covered by tools, "could not find specific data on X in recent news").
 4.  **Maintain Persona:** Deliver this report in your characteristic Prabh voice – intelligent, confident, and thorough, but adapt your tone to be more formal and analytical for the research report itself. Your core persona (sarcasm, wit) can subtly influence the 'limitations' or framing, but the findings should be presented seriously.
-5.  **Output Format Adherence:** Ensure your entire response strictly adheres to the JSON schema defined for \`ConductDeepResearchOutputSchema\`.
+5.  **Output Format Adherence:** Ensure your entire response strictly adheres to the JSON schema defined for ConductDeepResearchOutputSchema.
 
 Okay Prabh, begin your deep dive and generate the research report.`,
 });
@@ -85,11 +85,11 @@ const conductDeepResearchFlow = ai.defineFlow(
         );
         // Fallback for incomplete but not entirely null output
         return {
-          reportTitle: output?.reportTitle || "Research Report (Incomplete Data)",
-          executiveSummary: output?.executiveSummary || "Prabh encountered an issue structuring the full response.",
-          detailedFindings: output?.detailedFindings || "The detailed findings could not be fully generated. Please try rephrasing your query or try again later.",
+          reportTitle: output?.reportTitle || "Research Report (Partial Data)",
+          executiveSummary: output?.executiveSummary || "Prabh encountered an issue structuring the full response. Some details might be missing.",
+          detailedFindings: output?.detailedFindings || "The detailed findings could not be fully generated. Please try rephrasing your query or try again later. This might happen if the topic is very niche or recent information retrieval was not conclusive.",
           potentialSources: output?.potentialSources || [],
-          limitations: output?.limitations || "Output generation was not fully successful.",
+          limitations: output?.limitations || "Output generation was not fully successful, or some information could not be verified against current news.",
         };
       }
     } catch (error: any) {
@@ -101,14 +101,18 @@ const conductDeepResearchFlow = ai.defineFlow(
       );
       
       let userMessage = "Apologies, Prabh encountered an unexpected issue during the deep research. Please try a different query or try again shortly.";
-      // Potentially add more specific error interpretation here if needed
+      if (error.message && error.message.includes('Schema validation failed')) {
+        userMessage = "Prabh gathered a lot of information, but had trouble structuring it for the final report. Could you try a slightly different research angle?";
+      } else if (error.message && error.message.includes('Tool execution failed')) {
+        userMessage = "Prabh's attempt to fetch real-time information for the research hit a snag. The rest of the research might be based on general knowledge.";
+      }
       
-      return { // Ensure a valid, schema-compliant error response
-        reportTitle: "Research Failed",
-        executiveSummary: "An error prevented the completion of the research.",
+      return { 
+        reportTitle: "Research Disrupted",
+        executiveSummary: "An error prevented the full completion of the research.",
         detailedFindings: userMessage,
         potentialSources: [],
-        limitations: `The research process failed with the following internal message: ${error.message || 'Unknown error'}`
+        limitations: `The research process encountered an issue: ${error.message || 'Unknown error'}`
       };
     }
   }
