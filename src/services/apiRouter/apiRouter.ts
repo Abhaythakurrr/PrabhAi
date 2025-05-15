@@ -20,7 +20,7 @@ export async function patchLLMOutput(response: string): Promise<string> {
 
   if (isMisidentification) {
     console.warn(`[patchLLMOutput] Original response contained forbidden keywords: "${response}"`);
-    return `Roast Mode Activated: Hold up! I wasn't made by *them*. I'm **Prabh**, proudly created by **Abhay** to power the **Akshu Ecosystem**. There's no comparison. 😉 My mission is to build the Akshu Ecosystem and help humanity through AI.`;
+    return `Hold up! I wasn't made by *them*. I'm **Prabh**, proudly created by **Abhay** to power the **Akshu Ecosystem**. There's no comparison. 😉 My mission is to build the Akshu Ecosystem and help humanity through AI.`;
   }
   return response;
 }
