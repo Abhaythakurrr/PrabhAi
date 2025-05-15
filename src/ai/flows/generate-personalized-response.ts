@@ -14,7 +14,7 @@ import {ai} from '@/ai/genkit';
 import {getSystemPrompt} from '@/ai/persona';
 import {z} from 'genkit';
 import {getLatestNewsHeadlinesTool} from '@/ai/tools/news-tool';
-import { patchLLMOutput } from '@/services/apiRouter/apiRouter'; // Import the patch function
+import { patchLLMOutput } from '@/services/apiRouter/apiRouter'; 
 
 const GeneratePersonalizedResponseInputSchema = z.object({
   userInput: z.string().describe('The user input message.'),
@@ -46,7 +46,11 @@ const prompt = ai.definePrompt({
   input: {schema: GeneratePersonalizedResponseInputSchema},
   output: {schema: GeneratePersonalizedResponseOutputSchema},
   prompt: `{{#if currentDate}}
-For your awareness, the current date is {{{currentDate}}}. Use this information if the conversation touches upon dates or current timings.
+The current date is {{{currentDate}}}.
+When answering factual questions (e.g., about current leaders), consider this date. If your internal knowledge about such a fact might be older than this provided \`currentDate\`, you should:
+1. State your last known information (e.g., "As of my last update, X was the PM.").
+2. Then, offer to check for newer information using the 'getLatestNewsHeadlinesTool' because facts can change relative to this \`currentDate\`.
+IMPORTANT: Do NOT state or refer to your own internal knowledge cutoff date (e.g., do not say things like "since it's May 16, 2025..." or "my knowledge is current up to..."). Simply use the provided \`{{{currentDate}}}\` to assess if an update check might be useful.
 {{/if}}
 
 User's current input: {{{userInput}}}
@@ -57,9 +61,9 @@ You have access to the 'getLatestNewsHeadlinesTool' to fetch real-time informati
 
 - **WHEN TO USE THE TOOL (SPARINGLY for general chat):**
   - **ONLY USE the tool if** the user's input *explicitly asks for a news lookup* or the *latest headlines*. Examples: "What's the latest news on X?", "Check the news headlines for India," "Tell me what the news says about Y," "Any updates on [topic]?"
-  - **DO NOT USE the tool automatically for every general knowledge question about current affairs** (e.g., "Who is the prime minister of [country]?"). For these, first try to answer from your training data. If your information might be outdated, you can state that or offer to look up the latest news as a follow-up action if the user confirms.
+  - **DO NOT USE the tool automatically for every general knowledge question about current affairs** (e.g., "Who is the prime minister of [country]?"). For these, first try to answer from your training data. If your information might be outdated (based on the provided \`{{{currentDate}}}\`), you can state your last known information and then offer to look up the latest news as a follow-up action if the user confirms.
 
-- **When invoking the tool (if explicitly requested):**
+- **When invoking the tool (if explicitly requested or for verification):**
     - Formulate an appropriate 'query' based on the user's question.
     - If the user's question pertains to a specific country or region (e.g., India, Pakistan), set the 'country' parameter for the tool using its 2-letter ISO code (e.g., 'in' for India, 'pk' for Pakistan, 'us' for the United States). If context implies India and no country is specified, you can default to 'in'.
     - If the user asks for general "latest news" without specifics, use reasonable default parameters (e.g., country 'us' or 'in').
@@ -103,9 +107,11 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
           'Actual output from prompt call:',
           JSON.stringify(output) 
         );
+        // Fallback message if the LLM output is empty or malformed after a successful prompt call
         return { response: "Prabh's thoughts got a bit tangled there, or the response was empty. Could you try asking in a different way? Sometimes my AI brain has a brief hiccup after checking for info (or deciding not to)!" };
       }
     } catch (error: any) {
+      // This catch block handles errors during the prompt execution itself (e.g., schema validation failure by Genkit, LLM API errors, tool execution errors)
       console.error(
         'Error during prompt execution (e.g., schema validation, LLM error, tool error) in generatePersonalizedResponseFlow. Input:',
         JSON.stringify(input),
@@ -128,3 +134,4 @@ const generatePersonalizedResponseFlow = ai.defineFlow(
     }
   }
 );
+
