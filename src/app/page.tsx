@@ -1,53 +1,87 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button"; // ShadCN button
-import { Rocket, Lightbulb, Zap, Image as ImageIconLucide } from "lucide-react"; // Renamed to avoid conflict
+import { Button } from "@/components/ui/button"; 
+import { Rocket, Lightbulb, Zap, Image as ImageIconLucide } from "lucide-react"; 
 import Link from "next/link";
 import NextImage from "next/image";
 import { useEffect, useState } from 'react';
 import { generateImageFromDescription } from '@/ai/flows/generate-image-from-description';
-import Hero from '@/components/prabh_ui/Hero'; // Import the new Hero component
-import ThemeToggle from '@/components/prabh_ui/ThemeToggle'; // Import ThemeToggle using default import
+import Hero from '@/components/prabh_ui/Hero'; 
+import ThemeToggle from '@/components/prabh_ui/ThemeToggle'; 
 
 export default function DashboardPage() {
   const [personalizedExperienceImgSrc, setPersonalizedExperienceImgSrc] = useState("https://placehold.co/600x400.png");
   const [powerfulFeaturesImgSrc, setPowerfulFeaturesImgSrc] = useState("https://placehold.co/600x400.png");
+  const [personalizedExperienceError, setPersonalizedExperienceError] = useState<string | null>(null);
+  const [powerfulFeaturesError, setPowerfulFeaturesError] = useState<string | null>(null);
+
 
   useEffect(() => {
-    const fetchAiImage = async (hint: string, setter: React.Dispatch<React.SetStateAction<string>>) => {
-      if (!hint) return;
+    const fetchAiImage = async (
+      hint: string, 
+      setter: React.Dispatch<React.SetStateAction<string>>,
+      errorSetter: React.Dispatch<React.SetStateAction<string | null>>
+    ) => {
+      if (!hint) {
+        errorSetter("No hint provided for image generation.");
+        return;
+      }
+      errorSetter(null); // Clear previous error
       try {
-        // console.log(`Generating image for hint: ${hint}`); // Keep for debugging if needed
         const output = await generateImageFromDescription({ description: hint });
-        if (output.imageDataUri) {
+        if (output.success && output.imageDataUri) {
           setter(output.imageDataUri);
-          // console.log(`Successfully generated image for hint: ${hint}`);
         } else {
-          // console.warn(`Image generation for hint "${hint}" did not return a data URI.`);
+          console.warn(`Dashboard image generation for hint "${hint}" failed: ${output.errorMessage}`);
+          errorSetter(output.errorMessage || "Failed to generate image.");
+          // Keeps placeholder by not calling setter with new URL
         }
-      } catch (error) {
-        console.error(`Failed to generate image for hint "${hint}":`, error);
-        // Keeps placeholder on error
+      } catch (error: any) {
+        console.error(`Dashboard: Critical error generating image for hint "${hint}":`, error);
+        errorSetter(`Image generation error: ${error.message || 'Unknown error'}`);
+         // Keeps placeholder
       }
     };
 
-    // Disabling AI image generation for placeholders to speed up page load and reduce API calls during theme dev
-    // fetchAiImage("AI personalization abstract", setPersonalizedExperienceImgSrc);
-    // fetchAiImage("AI capabilities network", setPowerfulFeaturesImgSrc);
+    fetchAiImage("AI personalization abstract", setPersonalizedExperienceImgSrc, setPersonalizedExperienceError);
+    fetchAiImage("AI capabilities network", setPowerfulFeaturesImgSrc, setPowerfulFeaturesError);
   }, []);
 
+  const renderImageOrPlaceholder = (src: string, alt: string, hint: string, error: string | null) => {
+    if (error || src === "https://placehold.co/600x400.png") {
+      return (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-muted/30 rounded-lg">
+          <ImageIconLucide className="h-16 w-16 text-muted-foreground" />
+          {error && <p className="text-xs text-destructive mt-2 text-center p-1">{error.substring(0,100)}</p>}
+        </div>
+      );
+    }
+    return (
+      <NextImage 
+        src={src} 
+        alt={alt}
+        width={600} 
+        height={400} 
+        className="object-cover w-full h-full"
+        data-ai-hint={hint}
+        unoptimized={src.startsWith('data:')}
+      />
+    );
+  };
+
+
   return (
-    <div className="flex flex-col gap-0"> {/* Removed gap-8 to let Hero manage its spacing */}
-      <Hero /> {/* Added Hero component at the top */}
+    <div className="flex flex-col gap-0"> 
+      <Hero /> 
       
-      {/* Theme Toggle - Example placement, you can move this to MobileHeader or AppSidebar */}
       <div className="absolute top-4 right-16 z-50 hidden md:block">
         <ThemeToggle />
       </div>
 
 
-      <header className="space-y-2 p-6 md:p-8"> {/* Added padding to this section */}
+      <header className="space-y-2 p-6 md:p-8"> 
         <h2 className="text-3xl font-headline tracking-tight md:text-4xl text-prabh-text dark:text-dark_prabh-text">
           Explore PrabhAI's Features
         </h2>
@@ -56,7 +90,7 @@ export default function DashboardPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-6 md:p-8"> {/* Added padding */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 p-6 md:p-8"> 
         <Card className="shadow-card dark:shadow-dark_card hover:shadow-xl transition-shadow duration-300 bg-prabh-surface dark:bg-dark_prabh-surface">
           <CardHeader>
             <Rocket className="h-8 w-8 text-prabh-primary dark:text-dark_prabh-primary mb-2" />
@@ -81,19 +115,7 @@ export default function DashboardPage() {
         <Card className="shadow-card dark:shadow-dark_card hover:shadow-xl transition-shadow duration-300 bg-prabh-surface dark:bg-dark_prabh-surface">
           <CardHeader>
             <div className="aspect-[600/400] w-full overflow-hidden rounded-lg mb-2 bg-prabh-background dark:bg-dark_prabh-background flex items-center justify-center">
-              {personalizedExperienceImgSrc === "https://placehold.co/600x400.png" ? (
-                  <ImageIconLucide className="h-16 w-16 text-prabh-muted dark:text-dark_prabh-muted" />
-              ) : (
-                <NextImage 
-                  src={personalizedExperienceImgSrc} 
-                  alt="AI generated image for Personalized Experience" 
-                  width={600} 
-                  height={400} 
-                  className="object-cover w-full h-full"
-                  data-ai-hint="AI personalization" 
-                  unoptimized={personalizedExperienceImgSrc.startsWith('data:')}
-                />
-              )}
+              {renderImageOrPlaceholder(personalizedExperienceImgSrc, "AI generated image for Personalized Experience", "AI personalization", personalizedExperienceError)}
             </div>
             <CardTitle className="text-prabh-text dark:text-dark_prabh-text">Personalized Experience</CardTitle>
             <CardDescription className="text-prabh-muted dark:text-dark_prabh-muted">PrabhAI adapts to you with its Persona Engine and Unforgettable Memory.</CardDescription>
@@ -111,19 +133,7 @@ export default function DashboardPage() {
         <Card className="shadow-card dark:shadow-dark_card hover:shadow-xl transition-shadow duration-300 md:col-span-2 lg:col-span-1 bg-prabh-surface dark:bg-dark_prabh-surface">
           <CardHeader>
             <div className="aspect-[600/400] w-full overflow-hidden rounded-lg mb-2 bg-prabh-background dark:bg-dark_prabh-background flex items-center justify-center">
-                {powerfulFeaturesImgSrc === "https://placehold.co/600x400.png" ? (
-                    <ImageIconLucide className="h-16 w-16 text-prabh-muted dark:text-dark_prabh-muted" />
-                ) : (
-                  <NextImage 
-                    src={powerfulFeaturesImgSrc} 
-                    alt="AI generated image for Powerful AI Features" 
-                    width={600} 
-                    height={400} 
-                    className="object-cover w-full h-full"
-                    data-ai-hint="AI capabilities" 
-                    unoptimized={powerfulFeaturesImgSrc.startsWith('data:')}
-                  />
-                )}
+              {renderImageOrPlaceholder(powerfulFeaturesImgSrc, "AI generated image for Powerful AI Features", "AI capabilities", powerfulFeaturesError)}
             </div>
             <CardTitle className="text-prabh-text dark:text-dark_prabh-text">Powerful AI Features</CardTitle>
             <CardDescription className="text-prabh-muted dark:text-dark_prabh-muted">Leverage cutting-edge AI for real-time knowledge, media generation, and more.</CardDescription>

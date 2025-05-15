@@ -18,7 +18,9 @@ const GenerateImageFromDescriptionInputSchema = z.object({
 export type GenerateImageFromDescriptionInput = z.infer<typeof GenerateImageFromDescriptionInputSchema>;
 
 const GenerateImageFromDescriptionOutputSchema = z.object({
-  imageDataUri: z.string().describe('The generated image as a data URI, or a placeholder URL on error.'),
+  imageDataUri: z.string().describe('The generated image as a data URI, or a placeholder URL if generation failed.'),
+  success: z.boolean().describe('Indicates if the image generation was successful.'),
+  errorMessage: z.string().optional().describe('An error message if generation failed.'),
 });
 export type GenerateImageFromDescriptionOutput = z.infer<typeof GenerateImageFromDescriptionOutputSchema>;
 
@@ -42,16 +44,17 @@ const generateImageFromDescriptionFlow = ai.defineFlow(
         },
       });
       if (media && media.url) {
-        return {imageDataUri: media.url};
+        return {imageDataUri: media.url, success: true};
       }
       // Fallthrough if media or media.url is unexpectedly null/undefined
-      console.warn('Image generation call succeeded but media.url was null/undefined. Input:', input.description);
-      return {imageDataUri: 'https://placehold.co/600x400.png'}; // Fallback
-    } catch (error) {
-      console.error('Error during image generation in generateImageFromDescriptionFlow. Input:', input.description, 'Error:', error);
+      const errorMessage = "Image data was not returned by the AI despite a successful call structure.";
+      console.warn(`Image generation issue for input "${input.description}": ${errorMessage}`);
+      return {imageDataUri: 'https://placehold.co/600x400.png', success: false, errorMessage: errorMessage};
+    } catch (error: any) {
+      const errorMessage = `AI image generation failed: ${error.message || 'Unknown error'}`;
+      console.error(`Error during image generation in generateImageFromDescriptionFlow. Input "${input.description}":`, error);
       // Return a placeholder if the API call fails
-      return {imageDataUri: 'https://placehold.co/600x400.png'};
+      return {imageDataUri: 'https://placehold.co/600x400.png', success: false, errorMessage: errorMessage};
     }
   }
 );
-

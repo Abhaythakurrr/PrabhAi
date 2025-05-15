@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -48,33 +49,44 @@ export default function MediaGenerationPage() {
       return;
     }
     setIsLoading(true);
-    setGeneratedMediaUrl(null);
+    setGeneratedMediaUrl(null); // Clear previous media
 
     try {
       if (mediaType === 'image') {
         const input: GenerateImageFromDescriptionInput = { description };
         const output: GenerateImageFromDescriptionOutput = await generateImageFromDescription(input);
-        setGeneratedMediaUrl(output.imageDataUri);
-        toast({
-          title: "Prabh Crafted an Image!",
-          description: "Your image is ready to view.",
-        });
+        
+        if (output.success && output.imageDataUri) {
+          setGeneratedMediaUrl(output.imageDataUri);
+          toast({
+            title: "Prabh Crafted an Image!",
+            description: "Your image is ready to view.",
+          });
+        } else {
+          // Set placeholder URL even on failure, as imageDataUri will contain it
+          setGeneratedMediaUrl(output.imageDataUri || 'https://placehold.co/600x400.png'); 
+          toast({
+            variant: "destructive",
+            title: "Prabh's Image Studio Hiccup!",
+            description: output.errorMessage || `Prabh couldn't generate the image. Please try again or rephrase your description.`,
+          });
+        }
       } else {
         // Video generation mock
         await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 3000));
-        // Using a static placeholder that looks like a video file URL for mock.
         setGeneratedMediaUrl("https://placehold.co/600x400.mp4/7C4DFF/FFFFFF?text=Prabh's+Amazing+Video+(Mock)"); 
         toast({
           title: "Prabh's Video (Mock) Ready!",
           description: "This is a placeholder for video generation.",
         });
       }
-    } catch (error) {
-      console.error(`Error generating ${mediaType} with Prabh:`, error);
+    } catch (error: any) { // This catch is for unexpected errors from the flow call itself
+      console.error(`Critical error generating ${mediaType} with Prabh:`, error);
+      setGeneratedMediaUrl('https://placehold.co/600x400.png'); // Ensure placeholder on critical error
       toast({
         variant: "destructive",
         title: `Prabh's ${mediaType} Machine Stalled!`,
-        description: `Failed to generate ${mediaType}. Please try again.`,
+        description: `A critical error occurred. Please try again. ${error.message || ''}`,
       });
     } finally {
       setIsLoading(false);
@@ -121,6 +133,7 @@ export default function MediaGenerationPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             className="text-base bg-background text-foreground placeholder:text-muted-foreground"
+            disabled={isLoading}
           />
           
           <Button onClick={handleGenerateMedia} disabled={isLoading || !description.trim()} className="w-full text-lg py-3 bg-accent hover:bg-accent/90 text-accent-foreground">
@@ -145,7 +158,7 @@ export default function MediaGenerationPage() {
                   height={400} 
                   className="rounded-md shadow-lg mx-auto object-contain"
                   data-ai-hint={getAiHint(description)}
-                  unoptimized={generatedMediaUrl.startsWith('data:')} // Important for base64 images
+                  unoptimized={generatedMediaUrl.startsWith('data:') || generatedMediaUrl.startsWith('http')} // Important for base64 & placeholder images
                 />
               ) : (
                 <div className="bg-black rounded-md p-2 aspect-video flex items-center justify-center mx-auto max-w-md shadow-lg">
@@ -153,7 +166,6 @@ export default function MediaGenerationPage() {
                       This is a mock video. In a real app, Prabh would show your video here!
                       <br/> <span className="text-sm opacity-80">({generatedMediaUrl.split('?text=')[1]?.split('&')[0] || "Video Content"})</span>
                     </p>
-                    {/* <video controls src={generatedMediaUrl} className="w-full rounded-md shadow-md"></video> */}
                 </div>
               )}
             </div>
