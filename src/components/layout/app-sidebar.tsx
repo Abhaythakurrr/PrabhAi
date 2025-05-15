@@ -37,8 +37,8 @@ export function AppSidebar({ className }: AppSidebarProps) {
     >
       <SidebarHeader className="flex items-center justify-between p-4">
         <Link href="/" className="flex items-center gap-2">
-          {/* Use AppLogoIcon component here */}
-          <AppLogoIcon className="h-8 w-8" />
+          {/* Pass 'relative' and sizing classes to AppLogoIcon */}
+          <AppLogoIcon className="relative h-8 w-8" />
           {open && <span className="text-xl font-semibold">PrabhAI</span>}
         </Link>
         <div className="md:hidden">

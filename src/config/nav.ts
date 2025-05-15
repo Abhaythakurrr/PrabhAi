@@ -1,11 +1,14 @@
+
 import React from 'react';
-import Image from 'next/image'; // Correct import for Next.js Image component
+import Image from 'next/image';
+// cn utility is not strictly needed here for AppLogoIcon's div anymore
+// import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Mic,
   Users,
   Newspaper,
-  ImageIcon as ImageLucide, // Renamed to avoid conflict
+  ImageIcon as ImageLucide,
   Brain,
   Shuffle,
   Blocks,
@@ -14,26 +17,21 @@ import {
   Library,
   Cpu
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react'; // For NavItem type
-import { cn } from '@/lib/utils'; // Assuming cn is in lib/utils
+import type { LucideIcon } from 'lucide-react';
 
 export interface NavItem {
   title: string;
   href: string;
-  icon: LucideIcon | React.FC<any>; // Allow React components for icons
+  icon: LucideIcon | React.FC<any>; // AppLogoIcon is React.FC<any>
   label?: string;
   disabled?: boolean;
 }
 
 // Define AppLogoIcon as a React component
-export const AppLogoIcon: React.FC<{ className?: string }> = ({ className: passedClassName }) => {
-  // Construct the className for the div
-  // The div itself will be 'relative' for the Next/Image layout="fill" to work within it.
-  // And it will take any className passed from the parent.
-  const divClasses = cn("relative", passedClassName);
-
+// The component now expects the full className (including 'relative' and dimensions) to be passed from the parent.
+export const AppLogoIcon: React.FC<{ className?: string }> = ({ className }) => {
   return (
-    <div style={{ width: '32px', height: '32px' }} className={divClasses}>
+    <div className={className}>
       <Image
         src="/logo/logo.png" // Path to your logo in public/logo/
         alt="PrabhAI Logo"
