@@ -1,13 +1,15 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Blocks, PlayCircle, Code, Rocket, Lightbulb, Loader2 } from "lucide-react";
-import Image from "next/image";
+import { Blocks, PlayCircle, Code, Rocket, Lightbulb, Loader2, ImageIcon } from "lucide-react"; // Added ImageIcon
+import NextImage from "next/image"; // Renamed to avoid conflict with Lucide icon
 // import Link from "next/link"; // Link component not used in this version
 import { generateAppFromDescription, type GenerateAppInput, type GenerateAppOutput } from '@/ai/flows/generate-app-from-description';
+import { generateImageFromDescription } from '@/ai/flows/generate-image-from-description'; // Import image generation flow
 import { Textarea } from "@/components/ui/textarea";
-import React from "react";
+import React, { useEffect, useState } from "react"; // Added useEffect, useState
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -15,7 +17,24 @@ export default function StudioPage() {
   const [appDescription, setAppDescription] = React.useState("");
   const [generatedApp, setGeneratedApp] = React.useState<GenerateAppOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [studioImageUrl, setStudioImageUrl] = useState("https://placehold.co/600x400.png"); // State for dynamic image
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchStudioImage = async () => {
+      try {
+        const output = await generateImageFromDescription({ description: "coding interface" });
+        if (output.imageDataUri) {
+          setStudioImageUrl(output.imageDataUri);
+        }
+      } catch (error) {
+        console.error("Failed to generate studio image:", error);
+        // Keeps placeholder on error
+      }
+    };
+    fetchStudioImage();
+  }, []);
+
 
   const handleGenerateApp = async () => {
     if (!appDescription.trim()) {
@@ -80,14 +99,19 @@ export default function StudioPage() {
             </CardContent>
           </div>
           <div className="md:w-1/2 bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center p-4 md:p-0 min-h-[200px] md:min-h-0">
-             <Image 
-                src="https://placehold.co/600x400.png" 
-                alt="Prabh AI Studio Interface Mockup" 
-                width={600} 
-                height={400} 
-                className="rounded-lg shadow-2xl object-cover"
-                data-ai-hint="coding interface"
-            />
+            {studioImageUrl === "https://placehold.co/600x400.png" ? (
+                <ImageIcon className="h-16 w-16 text-muted-foreground" />
+            ) : (
+              <NextImage 
+                  src={studioImageUrl} 
+                  alt="Prabh AI Studio Interface" 
+                  width={600} 
+                  height={400} 
+                  className="rounded-lg shadow-2xl object-cover"
+                  data-ai-hint="coding interface"
+                  unoptimized={studioImageUrl.startsWith('data:')}
+              />
+            )}
           </div>
         </div>
       </Card>

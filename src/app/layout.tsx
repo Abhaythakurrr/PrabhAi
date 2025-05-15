@@ -1,13 +1,15 @@
+
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google'; // Changed from Geist
+import { Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { SidebarProvider, SidebarInset, SidebarRail } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/app-sidebar';
-import { MobileHeader } from '@/components/layout/mobile-header'; // Import the new component
+import { MobileHeader } from '@/components/layout/mobile-header';
 import { Toaster } from "@/components/ui/toaster";
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+const inter = Inter({ // Changed from geistSans
+  variable: '--font-inter', // Changed variable name
   subsets: ['latin'],
 });
 
@@ -28,12 +30,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${geistMono.variable} antialiased`}> {/* Updated font variable */}
         <SidebarProvider defaultOpen={false}>
-          <AppSidebar /> {/* This will be the sheet content on mobile */}
-          <SidebarRail /> {/* Desktop only */}
+          <AppSidebar />
+          <SidebarRail />
           <SidebarInset>
-            <MobileHeader /> {/* This is visible on mobile and contains the trigger */}
+            <MobileHeader />
             <div className="flex-1 p-4 sm:p-6">
               {children}
             </div>

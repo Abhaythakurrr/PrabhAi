@@ -46,9 +46,31 @@ const summarizeNewsArticleFlow = ai.defineFlow(
     inputSchema: SummarizeNewsArticleInputSchema,
     outputSchema: SummarizeNewsArticleOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input): Promise<SummarizeNewsArticleOutput> => {
+    try {
+      const {output} = await prompt(input);
+      if (output && typeof output.summary === 'string' && output.summary.trim() !== "") {
+        return output;
+      }
+      console.warn(
+        'summarizeNewsArticlePrompt returned a malformed or empty output. Input:',
+        JSON.stringify(input),
+        'Actual output from prompt call:',
+        JSON.stringify(output)
+      );
+      return { summary: "Prabh had a bit of trouble summarizing that. Maybe the article was too short, too complex, or something went sideways with my AI brain!" };
+    } catch (error: any) {
+      console.error(
+        'Error during summarizeNewsArticleFlow execution. Input:',
+        JSON.stringify(input),
+        'Error:',
+        error
+      );
+      let userMessage = "Apologies, Prabh encountered an unexpected issue while trying to summarize. Please try again shortly.";
+      if (error.message && error.message.includes('Schema validation failed')) {
+        userMessage = "Prabh read the article, but couldn't quite structure the summary. Maybe try a different article?";
+      }
+      return { summary: userMessage };
+    }
   }
 );
-

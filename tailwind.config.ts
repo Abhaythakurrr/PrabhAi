@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -10,7 +11,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-geist-sans)', 'sans-serif'],
+        sans: ['var(--font-inter)', 'sans-serif'], // Changed from Geist Sans
         mono: ['var(--font-geist-mono)', 'monospace'],
       },
       colors: {
@@ -86,11 +87,20 @@ export default {
           to: {
             height: '0'
           }
+        },
+        'spin-slow-kf': { // Added unique keyframe name
+          from: {
+            transform: 'rotate(0deg)'
+          },
+          to: {
+            transform: 'rotate(360deg)'
+          }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out'
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'spin-slow': 'spin-slow-kf 3s linear infinite' // Reference unique keyframe
       }
     }
   },
