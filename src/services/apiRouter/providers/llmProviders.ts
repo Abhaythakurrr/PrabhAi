@@ -1,10 +1,10 @@
+
 'use server';
 
-import type { GeneratePersonalizedResponseInput } from "@/ai/flows/generate-personalized-response"; // Assuming context might be similar
+import type { GeneratePersonalizedResponseInput } from "@/ai/flows/generate-personalized-response";
 import { getSystemPrompt } from "@/ai/persona";
 
-// Placeholder for a more structured response type from LLM providers
-interface LLMProviderResponse {
+export interface LLMProviderResponse {
   success: boolean;
   content?: string;
   error?: string;
@@ -15,19 +15,23 @@ export async function callOpenRouter(prompt: string, context?: GeneratePersonali
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     console.error("OpenRouter API key is not set.");
-    throw new Error("OpenRouter API key not configured.");
+    // No need to throw here, router will try next. Let robustCall handle retries if fetch fails.
+    return { success: false, error: "OpenRouter API key not configured.", providerName: "OpenRouter" };
   }
 
   const systemMessage = context ? getSystemPrompt(context.persona, context.pastInteractions) : getSystemPrompt("Prabh (Neutral)", "General query");
   
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", { // Updated endpoint for chat
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      // Recommended headers by OpenRouter
+      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000", // Replace with your actual app URL
+      "X-Title": process.env.NEXT_PUBLIC_APP_NAME || "PrabhAI", // Replace with your app name
     },
     body: JSON.stringify({
-      model: "mistralai/mistral-7b-instruct:free", // Example free model, adjust as needed
+      model: "mistralai/mistral-7b-instruct:free", // Using a known free model
       messages: [
         { role: "system", content: systemMessage },
         { role: "user", content: prompt }
@@ -45,43 +49,55 @@ export async function callOpenRouter(prompt: string, context?: GeneratePersonali
   const content = data.choices?.[0]?.message?.content;
 
   if (!content) {
+    console.warn("OpenRouter returned no content in choices[0].message.content", data);
     throw new Error("OpenRouter returned no content.");
   }
   return { success: true, content, providerName: "OpenRouter" };
 }
 
-export async function callEdenAI(prompt: string, context?: any): Promise<LLMProviderResponse> {
-  console.log("Attempting to call EdenAI with prompt:", prompt, "Context:", context);
-  // Simulate API call structure
+export async function callEdenAI(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
+  console.log("Attempting to call EdenAI (LLM) with prompt:", prompt);
   // const apiKey = process.env.EDEN_AI_API_KEY;
-  // if (!apiKey) throw new Error("EdenAI API key not configured.");
-  // Actual API call logic here
+  // if (!apiKey) return { success: false, error: "EdenAI API key not configured.", providerName: "EdenAI" };
+  // const systemMessage = context ? getSystemPrompt(context.persona, context.pastInteractions) : getSystemPrompt("Prabh (Neutral)", "General query");
+  // ... actual API call logic for EdenAI LLM
   throw new Error('Provider EdenAI (LLM) not implemented');
-  // return { success: false, error: "EdenAI (LLM) not implemented", providerName: "EdenAI" }; 
+  // return { success: false, error: "EdenAI (LLM) not implemented", providerName: "EdenAI (LLM)" };
 }
 
-export async function callGemini(prompt: string, context?: any): Promise<LLMProviderResponse> {
-  console.log("Attempting to call Gemini with prompt:", prompt, "Context:", context);
-  // Simulate API call structure
-  // const apiKey = process.env.GOOGLE_API_KEY; // Or GEMINI_API_KEY if specific
-  // if (!apiKey) throw new Error("Gemini API key not configured.");
-  // Actual API call logic here - this would likely use Genkit's ai.generate directly or a custom client
-  throw new Error('Provider Gemini (LLM) not implemented');
-  // return { success: false, error: "Gemini (LLM) not implemented", providerName: "Gemini" };
+export async function callGemini(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
+  console.log("Attempting to call Gemini (LLM) via Genkit with prompt:", prompt);
+  // This would typically involve using the existing Genkit `ai.generate` or a specific Genkit flow.
+  // For direct integration here, you might call a Genkit flow, or if Genkit instance is available:
+  // import { ai } from '@/ai/genkit'; // Assuming ai is accessible
+  // const systemMessage = context ? getSystemPrompt(context.persona, context.pastInteractions) : getSystemPrompt("Prabh (Neutral)", "General query");
+  // try {
+  //   const { text } = await ai.generate({ prompt: [{role: 'system', content: systemMessage}, {role: 'user', content: prompt}] });
+  //   if (text) {
+  //     return { success: true, content: text, providerName: "Gemini (Genkit)" };
+  //   }
+  //   throw new Error("Gemini (Genkit) returned no text.");
+  // } catch (error: any) {
+  //   console.error("Error calling Gemini (Genkit) LLM:", error);
+  //   throw error; // Re-throw for robustCall
+  // }
+  throw new Error('Provider Gemini (LLM) not implemented in router. Use Genkit flows.');
 }
 
-export async function callTogetherAI(prompt: string, context?: any): Promise<LLMProviderResponse> {
-  console.log("Attempting to call TogetherAI with prompt:", prompt, "Context:", context);
+export async function callTogetherAI(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
+  console.log("Attempting to call TogetherAI (LLM) with prompt:", prompt);
   // const apiKey = process.env.TOGETHER_AI_API_KEY;
-  // if (!apiKey) throw new Error("TogetherAI API key not configured.");
+  // if (!apiKey) return { success: false, error: "TogetherAI API key not configured.", providerName: "TogetherAI" };
+  // const systemMessage = context ? getSystemPrompt(context.persona, context.pastInteractions) : getSystemPrompt("Prabh (Neutral)", "General query");
+  // ... actual API call logic
   throw new Error('Provider TogetherAI (LLM) not implemented');
-  // return { success: false, error: "TogetherAI (LLM) not implemented", providerName: "TogetherAI" };
 }
 
-export async function callAIML(prompt: string, context?: any): Promise<LLMProviderResponse> {
-  console.log("Attempting to call AIMLapi.com with prompt:", prompt, "Context:", context);
+export async function callAIML(prompt: string, context?: GeneratePersonalizedResponseInput): Promise<LLMProviderResponse> {
+  console.log("Attempting to call AIMLapi.com (LLM) with prompt:", prompt);
   // const apiKey = process.env.AIML_API_KEY;
-  // if (!apiKey) throw new Error("AIML API key not configured.");
+  // if (!apiKey) return { success: false, error: "AIML API key not configured.", providerName: "AIML" };
+  // const systemMessage = context ? getSystemPrompt(context.persona, context.pastInteractions) : getSystemPrompt("Prabh (Neutral)", "General query");
+  // ... actual API call logic
   throw new Error('Provider AIMLapi.com (LLM) not implemented');
-  // return { success: false, error: "AIMLapi.com (LLM) not implemented", providerName: "AIML" };
 }
