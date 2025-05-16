@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "prabhai-v1-service"
+location: "asia-south1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "prabhai-v1-database"
+      cloudSql:
+        instanceId: "prabhai-v1-instance"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]

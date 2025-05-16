@@ -1,0 +1,5 @@
+app.post('/api/ai/command', authMiddleware, (req, res) => {
+  const { command } = req.body;
+  console.log('Received AI command:', command);
+  res.json({ status: 'received', command: command });
+});

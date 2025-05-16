@@ -18,7 +18,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { mainNav, footerNav } from '@/config/nav'; 
-import { AppLogoIcon } from './app-logo-icon'; // Updated import path
+import { AppLogoIcon } from './app-logo-icon'; 
 // import { Button } from '@/components/ui/button'; // Not used
 import { Separator } from '@/components/ui/separator';
 
@@ -60,14 +60,11 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   disabled={item.disabled}
                   className="justify-start"
                 >
-                  <a>
-                    {/* Handle if icon is LucideIcon or React.FC */}
-                    {typeof item.icon === 'function' ? (
-                      <item.icon className="h-5 w-5" />
-                    ) : (
-                      <item.icon className="h-5 w-5" /> // Fallback if it's somehow not a function (LucideIcon)
-                    )}
-                    <span>{item.title}</span>
+                  {/* item.colorAccent is available here: ${item.colorAccent} */}
+                  <a className="flex items-center w-full">
+                    {/* Instruction: Add a div wrapper around the icon and add dynamic class based on item.colorAccent */}
+                    {item.icon && <item.icon className="h-5 w-5" />}
+                    {open && <span>{item.title}</span>}
                   </a>
                 </SidebarMenuButton>
               </Link>
@@ -88,13 +85,11 @@ export function AppSidebar({ className }: AppSidebarProps) {
                   disabled={item.disabled}
                   className="justify-start"
                 >
-                  <a>
-                    {typeof item.icon === 'function' ? (
-                      <item.icon className="h-5 w-5" />
-                    ) : (
-                      <item.icon className="h-5 w-5" />
-                    )}
-                    <span>{item.title}</span>
+                   {/* item.colorAccent is available here: ${item.colorAccent} */}
+                  <a className="flex items-center w-full">
+                    {/* Instruction: Add a div wrapper around the icon and add dynamic class based on item.colorAccent */}
+                    {item.icon && <item.icon className="h-5 w-5" />}
+                    {open && <span>{item.title}</span>}
                    </a>
                 </SidebarMenuButton>
               </Link>

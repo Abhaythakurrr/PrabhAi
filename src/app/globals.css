@@ -77,9 +77,57 @@
   }
 }
 
+/* Base animation for pulsing glow */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 15px currentColor, 0 0 20px currentColor;
+  }
+  100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+  }
+}
+
+/* Apply glow effect on hover for tiles, using currentColor for flexible glow color */
+.tile-card:hover {
+  animation: pulse-glow 2s infinite ease-in-out;
+  transform: translateY(-6px); /* Existing hover transform */
+}
+
+/* Define icon container styles and glowing text shadows for each accent */
+@layer components {
+  /* Base for the glowing icon */
+  .icon-container {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    /* Use currentColor for text-shadow to match the accent color */
+    text-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+  }
+
+  /* Define colors for each accent class */
+  .accent-cyan .icon-container { color: #00ffff; } /* Bright Cyan */
+  .accent-neon-green .icon-container { color: #39ff14; } /* Neon Green */
+  .accent-orange .icon-container { color: #ff8c00; } /* Warm Orange */
+  .accent-pink .icon-container { color: #ff69b4; } /* Electric Magenta */
+  .accent-teal .icon-container { color: #008080; } /* Teal Blue */
+  .accent-purple .icon-container { color: #800080; } /* Deep Purple */
+  .accent-gold .icon-container { color: #ffd700; } /* Antique Gold */
+  .accent-magenta .icon-container { color: #ff00ff; } /* Using a different magenta for distinction */
+  .accent-yellow .icon-container { color: #ffff00; } /* Golden Yellow */
+  .accent-terminal .icon-container { color: #00ff00; } /* Hacker Green/Terminal */
+  /* Add .accent-rainbow class separately if it requires a distinct animation */
+}
 @layer base {
   body {
     background-color: hsl(var(--background));
+  }
+}
+
+/* Added sidebar styling */
+@layer components {
+  .sidebar {
     color: hsl(var(--foreground));
     @apply font-body;
     /* Adding a subtle gradient for a "dreamy" feel */
@@ -87,10 +135,250 @@
     min-height: 100vh;
   }
 
+  .feature-tile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 2rem;
+    padding: 1rem;
+  }
+
+  .tile-card {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05); /* frosted glass */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    padding: 2rem;
+    text-align: center;
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    /* Initial subtle glow - will be overridden by hover animation */
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Accent Glows (sample - expand as needed) */
+  .accent-neon-green .icon-container {
+    color: #39ff14;
+    text-shadow: 0 0 10px #39ff14, 0 0 20px #39ff14aa;
+  }
+
+  .sidebar {
+    animation: pulse-glow 2s infinite ease-in-out;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-headline;
   }
 }
+
+/* === Main Panel Background with animated gradient === */
+.main-panel {
+  position: relative;
+  min-height: 100vh;
+  background: linear-gradient(270deg, #0a0f1c, #0b1224, #1f2833, #0a0f1c);
+  background-size: 800% 800%;
+  animation: gradient-shift 20s ease infinite;
+  overflow: hidden;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* === Scanlines overlay for retro-futuristic vibe === */
+.scanlines {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  animation: flicker 3s infinite alternate;
+  z-index: 5;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.08; }
+}
+
+/* === Feature Tile Grid Container === */
+.feature-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  z-index: 10;
+  position: relative;
+}
+
+/* === Frosted Glass Tile Cards === */
+.tile-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition:
+    box-shadow 0.3s ease,
+    transform 0.3s ease,
+    border-color 0.3s ease;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+/* === Hover: float + scale + glow shadow === */
+.tile-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow:
+    0 8px 20px rgba(0, 255, 255, 0.3),
+    inset 0 0 15px rgba(255, 255, 255, 0.15);
+  border-color: #00ffff;
+  z-index: 20;
+}
+
+/* === Neon Accent Colors and Shadows for Tiles === */
+
+/* Cyan Accent */
+.accent-cyan {
+  --accent-color: #00fff7;
+  border-color: #00fff7;
+  box-shadow:
+    0 0 10px #00fff7,
+    inset 0 0 10px #00fff7;
+  color: #00fff7;
+}
+.accent-cyan.tile-card:hover {
+  box-shadow:
+    0 8px 20px #00fff7,
+    inset 0 0 15px #00fff7;
+  border-color: #00fff7;
+}
+
+/* Neon Green Accent */
+.accent-neongreen {
+  --accent-color: #39ff14;
+  border-color: #39ff14;
+  box-shadow:
+    0 0 10px #39ff14,
+    inset 0 0 10px #39ff14;
+  color: #39ff14;
+}
+.accent-neongreen.tile-card:hover {
+  box-shadow:
+    0 8px 20px #39ff14,
+    inset 0 0 15px #39ff14;
+  border-color: #39ff14;
+}
+
+/* Purple Accent */
+.accent-purple {
+  --accent-color: #9d00ff;
+  border-color: #9d00ff;
+  box-shadow:
+    0 0 10px #9d00ff,
+    inset 0 0 10px #9d00ff;
+  color: #9d00ff;
+}
+.accent-purple.tile-card:hover {
+  box-shadow:
+    0 8px 20px #9d00ff,
+    inset 0 0 15px #9d00ff;
+  border-color: #9d00ff;
+}
+
+/* Pink Accent */
+.accent-pink {
+  --accent-color: #ff00ff;
+  border-color: #ff00ff;
+  box-shadow:
+    0 0 10px #ff00ff,
+    inset 0 0 10px #ff00ff;
+  color: #ff00ff;
+}
+.accent-pink.tile-card:hover {
+  box-shadow:
+    0 8px 20px #ff00ff,
+    inset 0 0 15px #ff00ff;
+  border-color: #ff00ff;
+}
+
+/* === Neon Edge Scanning Line Animation for All Tiles === */
+.tile-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-color),
+    transparent
+  );
+  animation: scan-line 2s linear infinite;
+  pointer-events: none;
+  border-radius: 0 12px 12px 0;
+  filter: drop-shadow(0 0 4px var(--accent-color));
+  z-index: 15;
+}
+
+@keyframes scan-line {
+  0% { background-position: 0 0; }
+  100% { background-position: 100% 0; }
+}
+
+/* === Icon Container inside Tile === */
+.tile-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 0 3px var(--accent-color));
+  transition: filter 0.3s ease;
+}
+
+.tile-card:hover .tile-icon {
+  filter: drop-shadow(0 0 8px var(--accent-color));
+}
+
+/* === Tile Title Styling === */
+.tile-title {
+  font-weight: 600;
+  font-size: 1.25rem;
+  text-align: center;
+  text-shadow:
+    0 0 5px rgba(0, 0, 0, 0.5),
+    0 0 10px var(--accent-color);
+  user-select: none;
+}
+
+/* === Optional: Subtle Pulse Glow Animation on Hover (cyan example) === */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px #00fff7, inset 0 0 10px #00fff7;
+  }
+  50% {
+    box-shadow: 0 0 20px #00fff7, inset 0 0 20px #00fff7;
+  }
+}
+
+.accent-cyan.tile-card:hover {
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
 
 @layer utilities {
   @keyframes spin-slow-kf { /* Renamed keyframe */
