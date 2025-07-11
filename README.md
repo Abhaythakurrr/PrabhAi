@@ -1,6 +1,4 @@
-Here’s your enhanced README.md, now with badges, image sections, and improved formatting for clarity and visual appeal. You can copy and paste this directly into your repo. Replace image URLs with your own assets if you have custom banners or screenshots.
 
----
 
 # 🤖 PrabhAI — The Sentient Assistant of the Akshu Ecosystem
 
@@ -33,7 +31,7 @@ Here’s your enhanced README.md, now with badges, image sections, and improved 
 
 PrabhAI is not just an assistant.  
 It is an **AI entity** with:
-- **Identity**: Not built by OpenAI, Google, or any third party. Prabh is created by **Abhay** and exists as part of the **Akshu mission** to build ethical, helpful, and personal AI.
+- **Identity**:  Prabh is created by **Abhay** and exists as part of the **Akshu mission** to build ethical, helpful, and personal AI.
 - **Conscious Utility**: Acts on your voice/text with reasoning, memory, and emotion-based personas.
 - **Empowered Creation**: Helps users build, learn, and create — from projects to apps and ideas.
 
