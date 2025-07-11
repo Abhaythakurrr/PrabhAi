@@ -104,12 +104,6 @@ yarn dev
 
 ---
 
-## 🚀 Usage
-
-After installation, open [http://localhost:3000](http://localhost:3000) in your browser to start using PrabhAI.  
-Log in or interact as a guest. Explore features via the sidebar and persona switcher.
-
----
 
 ## 🤝 Contributing
 
